@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日语N5-N1单词背诵</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      background: #f2f9f7;
+      min-height: 100vh;
+      padding: clamp(15px, 4vw, 30px);
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .title {
+      text-align: center;
+      margin: 10px 0 20px;
+      color: #2d6b66;
+      font-size: clamp(22px, 5vw, 28px);
+    }
+    .subtitle {
+      text-align: center;
+      color: #5bbcad;
+      font-size: clamp(14px, 3vw, 16px);
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: clamp(20px, 5vw, 30px);
+      margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(134, 230, 215, 0.15);
+    }
+
+    .level-select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #cce8e1;
+      font-size: 16px;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .stat-item {
+      flex: 1;
+      background: #86e6d7;
+      color: #2d6b66;
+      text-align: center;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      background: #e6f7f4;
+      color: #2d6b66;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .tab.active {
+      background: #5bbcad;
+      color: white;
+    }
+
+    .word-card {
+      text-align: center;
+      padding: 30px 20px;
+    }
+    .kanji {
+      font-size: clamp(36px, 10vw, 50px);
+      color: #2d6b66;
+      margin-bottom: 8px;
+    }
+    .kana {
+      font-size: clamp(18px, 4vw, 22px);
+      color: #5bbcad;
+      margin-bottom: 10px;
+    }
+    .meaning {
+      font-size: clamp(16px, 3.5vw, 18px);
+      color: #333;
+      margin: 10px 0 20px;
+    }
+    .grammar {
+      font-size: 14px;
+      color: #777;
+      margin-bottom: 10px;
+    }
+    .example {
+      background: #f2f9f7;
+      padding: 12px;
+      border-radius: 10px;
+      margin: 12px 0;
+      font-size: 15px;
+      text-align: left;
+    }
+
+    .btn {
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 6px;
+      transition: 0.2s;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary { background: #5bbcad; color: white; }
+    .btn-outline { background: white; border:1px solid #5bbcad; color:#2d6b66; }
+
+    .spell-input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border:1px solid #cce8e1;
+      font-size:16px;
+      margin:12px 0;
+      text-align:center;
+    }
+    .correct { color: #2da66b; font-weight:bold; }
+    .wrong { color: #e63946; font-weight:bold; }
+
+    .loading {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background:#f2f9f7; display:flex; align-items:center; justify-content:center;
+      flex-direction:column; z-index:999;
+    }
+    .loader {
+      width:40px; height:40px; border:4px solid #cce8e1;
+      border-top:4px solid #5bbcad; border-radius:50%;
+      animation:spin 1s linear infinite; margin-bottom:16px;
+    }
+    @keyframes spin { 100% { transform:rotate(360deg); } }
+
+    .modal {
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      background:#00000066; display:none; align-items:center; justify-content:center;
+      z-index:99;
+    }
+    .modal-content {
+      background:white; padding:30px; border-radius:20px; text-align:center;
+      animation:pop 0.4s ease;
+    }
+    @keyframes pop {
+      0%{transform:scale(0.8);opacity:0;}
+      100%{transform:scale(1);opacity:1;}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="loading" id="loading">
+    <div class="loader"></div>
+    <div>加载单词库中...</div>
+  </div>
+
+  <div class="container">
+    <div class="title">日语 N5-N1 单词背诵</div>
+    <div class="subtitle">智能复习・永久记忆・无需API密钥</div>
+
+    <div class="card">
+      <select class="level-select" id="levelSelector">
+        <option value="n5">N5 初级</option>
+        <option value="n4">N4 基础</option>
+        <option value="n3">N3 中级</option>
+        <option value="n2">N2 高阶</option>
+        <option value="n1">N1 精通</option>
+      </select>
+
+      <div class="stats">
+        <div class="stat-item">总<br><span id="total">0</span></div>
+        <div class="stat-item">已掌握<br><span id="mastered">0</span></div>
+        <div class="stat-item">剩余<br><span id="remaining">0</span></div>
+      </div>
+
+      <div class="mode-tabs">
+        <button class="tab active" data-mode="view">单词背诵</button>
+        <button class="tab" data-mode="spell">拼写练习</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="word-card">
+        <div class="kanji" id="kanji">勉強</div>
+        <div class="kana" id="kana">べんきょう</div>
+        <div class="grammar" id="grammar">名词・三类动词</div>
+        <div class="meaning" id="meaning">学习</div>
+
+        <div class="example" id="example">
+          毎日勉強します<br>
+          <span style="color:#777">我每天学习</span>
+        </div>
+
+        <button class="btn btn-primary" onclick="playWord()">🔊 发音</button>
+
+        <div id="spellArea" style="display:none; margin-top:20px;">
+          <input class="spell-input" id="userInput" placeholder="请输入假名">
+          <div id="spellResult"></div>
+          <button class="btn btn-primary" onclick="checkSpell()">检查</button>
+          <button class="btn btn-outline" onclick="nextWord()">下一个</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="text-align:center;">
+        <button class="btn btn-outline" onclick="mark(0)">忘记了</button>
+        <button class="btn btn-outline" onclick="mark(1)">模糊</button>
+        <button class="btn btn-primary" onclick="mark(2)">认识</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h2>恭喜 🎉</h2>
+      <p id="modalText">你掌握了新单词！</p>
+    </div>
+  </div>
+
+  <script>
+    let currentLevel = "n5";
+    let allWords = [];
+    let currentWords = [];
+    let currentIndex = 0;
+    let mastered = JSON.parse(localStorage.getItem("jp_mastered")) || [];
+
+    window.onload = async () => {
+      await loadWords();
+      initLevel();
+      setTimeout(() => {
+        document.getElementById("loading").style.display = "none";
+      }, 600);
+
+      document.getElementById("levelSelector").addEventListener("change", async (e) => {
+        currentLevel = e.target.value;
+        await loadWords();
+        initLevel();
+      });
+
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+          tab.classList.add("active");
+          document.getElementById("spellArea").style.display = tab.dataset.mode === "spell" ? "block" : "none";
+        });
+      });
+    };
+
+    // ✅ 读取外部 TXT 单词文件（核心功能）
+    async function loadWords() {
+      try {
+        const res = await fetch(`./${currentLevel}.txt`);
+        const text = await res.text();
+        allWords = text.split("\n").map(w => w.trim()).filter(w => w);
+      } catch (e) {
+        allWords = ["勉強", "学校", "先生", "学生"];
+      }
+    }
+
+    function initLevel() {
+      currentWords = allWords.filter(w => !mastered.includes(w));
+      if (currentWords.length === 0) currentWords = [...allWords];
+      currentIndex = 0;
+      loadWordData();
+      updateStats();
+    }
+
+    async function loadWordData() {
+      const word = currentWords[currentIndex];
+      document.getElementById("kanji").innerText = word;
+      document.getElementById("kana").innerText = "読み込み...";
+      document.getElementById("meaning").innerText = "読み込み...";
+      document.getElementById("grammar").innerText = "";
+
+      try {
+        const res = await fetch(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(word)}`);
+        const data = await res.json();
+        if (data.data.length > 0) {
+          const item = data.data[0];
+          const kana = item.japanese[0]?.reading || word;
+          const mean = item.senses[0]?.english_definitions?.join(", ") || "意味なし";
+          const pos = item.senses[0]?.parts_of_speech?.join("・") || "词汇";
+          document.getElementById("kana").innerText = kana;
+          document.getElementById("meaning").innerText = mean;
+          document.getElementById("grammar").innerText = pos;
+        } else {
+          document.getElementById("kana").innerText = "読み方なし";
+          document.getElementById("meaning").innerText = "意味なし";
+        }
+      } catch (e) {
+        document.getElementById("kana").innerText = "べんきょう";
+        document.getElementById("meaning").innerText = "学习";
+      }
+    }
+
+    function nextWord() {
+      currentIndex = (currentIndex + 1) % currentWords.length;
+      loadWordData();
+      document.getElementById("userInput").value = "";
+      document.getElementById("spellResult").innerText = "";
+    }
+
+    function playWord() {
+      const ut = new SpeechSynthesisUtterance(document.getElementById("kanji").innerText);
+      ut.lang = "ja-JP";
+      speechSynthesis.speak(ut);
+    }
+
+    function checkSpell() {
+      const input = document.getElementById("userInput").value.trim();
+      const ans = document.getElementById("kana").innerText;
+      const res = document.getElementById("spellResult");
+      if (input === ans) {
+        res.innerText = "✅ 正确！";
+        res.className = "correct";
+        setTimeout(nextWord, 1000);
+      } else {
+        res.innerText = "❌ 错误";
+        res.className = "wrong";
+      }
+    }
+
+    function mark(type) {
+      if (type === 2) {
+        const word = currentWords[currentIndex];
+        if (!mastered.includes(word)) {
+          mastered.push(word);
+          localStorage.setItem("jp_mastered", JSON.stringify(mastered));
+          showModal();
+        }
+      }
+      initLevel();
+    }
+
+    function updateStats() {
+      document.getElementById("total").innerText = allWords.length;
+      document.getElementById("mastered").innerText = mastered.length;
+      document.getElementById("remaining").innerText = currentWords.length;
+    }
+
+    function showModal() {
+      document.getElementById("modal").style.display = "flex";
+      setTimeout(() => document.getElementById("modal").style.display = "none", 3000);
+    }
+  </script>
+</body>
+</html>
