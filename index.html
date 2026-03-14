@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>日语单词攒钱计划</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        body {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #F2F9F4;
+        }
+        .page {
+            background: white;
+            padding: 28px 24px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+        }
+        .word-card {
+            border: 1px solid #E2F4E8;
+            background: #F9FFF9;
+            padding: 22px;
+            margin: 16px 0;
+            border-radius: 14px;
+            line-height: 1.7;
+        }
+        .word-card h3 {
+            font-size: 24px;
+            margin: 0 0 10px 0;
+            color: #2A6F38;
+        }
+        /* ========== 统一所有按钮颜色：超低饱和度淡绿 ========== */
+        button {
+            width: 100%;
+            padding: 16px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 14px;
+            background: #7FC590; /* 超低饱和统一绿 */
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        button:hover {
+            opacity: 0.92;
+        }
+        /* 三个按钮颜色完全一样，不再区分 */
+        button.secondary { background: #7FC590; }
+        button.danger    { background: #7FC590; }
+
+        .hidden { display: none; }
+
+        /* 首页 */
+        .home-title {
+            text-align: center;
+            margin: 20px 0 36px 0;
+        }
+        .home-title h1 {
+            font-size: 28px;
+            color: #2A6F38;
+            margin: 0;
+        }
+        .home-title p {
+            font-size: 16px;
+            color: #555;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+        .slogan {
+            font-size: 17px;
+            color: #388E3C;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+        .button-group { margin-top: 20px; }
+
+        /* 学习页顶部 */
+        .study-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        /* ========== 返回按钮：只留箭头，去掉文字 ========== */
+        .back-btn {
+            background: none;
+            color: #4A9F5D;
+            font-size: 22px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            width: auto;
+        }
+        .mark-btns button {
+            width: auto;
+            padding: 8px 14px;
+            font-size: 15px;
+            margin-left: 6px;
+            display: inline;
+            border-radius: 10px;
+        }
+
+        /* 攒钱进度页 */
+        .overview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .overview-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2A6F38;
+            margin: 0;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #F9FFF9;
+            border: 1px solid #E2F4E8;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        .stat-card .label { font-size: 13px; color: #666; margin-bottom: 4px; }
+        .stat-card .value { font-size: 18px; font-weight: bold; color: #2A6F38; }
+        .money-card {
+            background: linear-gradient(90deg, #F2F9F4, #E8F5EC);
+            border-radius: 14px;
+            padding: 20px;
+            margin: 16px 0;
+            text-align: center;
+        }
+        .money-title { font-size: 14px; color: #555; }
+        .money-amount { font-size: 28px; font-weight: bold; color: #2A6F38; margin: 6px 0; }
+
+        /* ====================== 真·日历（带星期头部） ====================== */
+        .calendar-section { margin-top: 24px; }
+        .calendar-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 12px; }
+        .week-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            margin-bottom: 6px;
+        }
+        .week-header span {
+            font-size: 12px;
+            color: #999;
+            font-weight: 500;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+        .calendar-day {
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #f8f8f8;
+            color: #666;
+        }
+        .calendar-day.learned-10 { background: #E6F7E9; color: #2A6F38; }
+        .calendar-day.learned-20 { background: #CEF0D4; color: #2A6F38; }
+        .calendar-day.learned-30 { background: #A6E2AF; color: #2A6F38; }
+        .calendar-tip {
+            font-size: 11px;
+            color: #bbb;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 首页 -->
+<div id="home" class="page">
+    <div class="home-title">
+        <h1>🏠 单词攒钱计划</h1>
+        <p>知识就是金钱<br>背一个单词，存一笔财富 🤑</p>
+        <p class="slogan" id="slogan"></p>
+    </div>
+    <div class="button-group">
+        <button onclick="goStudy('new')">📖 学习新单词</button>
+        <button class="secondary" onclick="goStudy('review')">🔁 复习已学单词</button>
+        <button class="danger" onclick="showOverview()">💰 攒钱进度</button>
+    </div>
+</div>
+
+<!-- 学习页面 -->
+<div id="studyPage" class="page hidden">
+    <div class="study-header">
+        <button class="back-btn" onclick="goHome()">←</button> <!-- 只留箭头 -->
+        <div class="mark-btns">
+            <button onclick="markKnown()">熟</button>
+            <button onclick="markUnknown()">生</button>
+        </div>
+    </div>
+    <h2 id="studyTitle"></h2>
+    <div id="wordDisplay" class="word-card"></div>
+    <button onclick="nextWord(false)">✅ 记住了</button>
+    <button class="danger" onclick="nextWord(true)">🔁 记错了</button>
+</div>
+
+<!-- 学习完成 -->
+<div id="spellingPage" class="page hidden">
+    <h2>🎉 学习完成！</h2>
+    <p>已自动存入攒钱基金 ✨</p>
+    <button onclick="startSpelling()">✍️ 强化拼写</button>
+    <button class="secondary" onclick="showResult()">📋 学习小结</button>
+</div>
+
+<!-- 拼写练习 -->
+<div id="spellingPractice" class="page hidden">
+    <h2>✍️ 拼写练习</h2>
+    <div id="spellPrompt" style="font-size:17px; margin-bottom:10px;"></div>
+    <input type="text" id="spellInput" placeholder="请输入单词" style="width:100%; padding:14px; border-radius:12px; border:1px solid #eee; margin:10px 0; font-size:16px;">
+    <button onclick="checkSpelling()">提交答案</button>
+</div>
+
+<!-- 学习结果 -->
+<div id="resultPage" class="page hidden">
+    <h2>📋 本次学习列表</h2>
+    <div id="resultList"></div>
+    <button onclick="goHome()">←</button> <!-- 只留箭头 -->
+</div>
+
+<!-- 攒钱进度页 -->
+<div id="overviewPage" class="page hidden">
+    <div class="overview-header">
+        <h2 class="overview-title">💰 我的攒钱进度</h2>
+        <button class="back-btn" onclick="goHome()">←</button> <!-- 只留箭头 -->
+    </div>
+
+    <div class="money-card">
+        <div class="money-title">累计已攒</div>
+        <div class="money-amount" id="totalMoneyText">0.0 元</div>
+        <div style="font-size:14px; color:#555;" id="streakText">连续学习 0 天</div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card"><div class="label">今日学习</div><div class="value" id="todayCountText">0 词</div></div>
+        <div class="stat-card"><div class="label">累计学习</div><div class="value" id="totalCountText">0 词</div></div>
+        <div class="stat-card"><div class="label">今日时长</div><div class="value" id="todayTimeText">0 分钟</div></div>
+        <div class="stat-card"><div class="label">累计时长</div><div class="value" id="totalTimeText">0 分钟</div></div>
+    </div>
+
+    <div class="calendar-section">
+        <div class="calendar-title">📅 本月学习日历</div>
+        
+        <!-- 真·星期头部 -->
+        <div class="week-header">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+        </div>
+        
+        <div class="calendar" id="calendarGrid"></div>
+        <div class="calendar-tip">浅绿=学习10个以上 | 中绿=10-20个 | 深绿=20个以上</div>
+    </div>
+</div>
+
+<script>
+// 核心配置
+const REVIEW_CURVE = [1,2,4,7,15,30];
+const BATCH_SIZE = 10;
+
+let data = JSON.parse(localStorage.getItem("wordData")) || {
+    words: [], studyRecord: {}, today: getToday(),
+    continuousDays: 0, totalMoney: 0,
+    milestones: [100,500,1000,2000,3000,4000,5000],
+    milestoneRewarded: []
+};
+
+let currentStudyList = [];
+let currentIndex = 0;
+let spellingList = [];
+let studyStartTime = null;
+
+// 每日slogan轮换
+const slogans = [
+    "开始学习，开始攒钱吧！",
+    "今天也要认真背单词哦！",
+    "知识变现，越学越有钱！",
+    "坚持下去，奖励就在前方！",
+    "每一个单词，都是你的小金库！",
+    "悄悄努力，然后惊艳所有人！",
+    "攒钱学习，双倍快乐！"
+];
+
+// 里程碑奖励文案
+const milestoneTexts = {
+    100: "🎉 恭喜攒够 100 元！奖励自己一顿美食吧！",
+    500: "💰 太棒了！500 元达成！可以买一本电子书啦！",
+    1000: "🔥 哇！1000 元！你真的超厉害！犒劳自己一杯咖啡吧！",
+    2000: "✨ 2000 元达成！离财富自由又近一步！",
+    3000: "🥇 3000 元！你已经坚持超久了，太优秀了！",
+    4000: "🏆 4000 元！学习达人就是你！",
+    5000: "🚀 5000 元终极目标！你简直是学神！"
+};
+
+// 日期工具
+function getToday() {
+    const d = new Date();
+    return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+}
+
+// 初始化单词
+async function initWords() {
+    if (data.words.length > 0) return;
+    try {
+        const res = await fetch("n1.txt");
+        const text = await res.text();
+        const lines = text.trim().split("\n");
+        data.words = lines.map(line => {
+            const [word, kana, sound, example, collocation] = line.split("|");
+            return { word, kana, sound, example, collocation, status: "new", reviewCount: 0, nextReview: "", addTime: getToday() };
+        });
+        saveData();
+    } catch (e) {
+        data.words = [{ word: "私", kana: "わたし", sound: "watashi", example: "私は学生です", collocation: "私たち", status: "new", reviewCount: 0, nextReview: "", addTime: getToday() }];
+    }
+}
+
+function saveData() { localStorage.setItem("wordData", JSON.stringify(data)); }
+
+function updateDate() {
+    const today = getToday();
+    if (data.today !== today) {
+        data.today = today;
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+        const ymd = `${yesterday.getFullYear()}-${(yesterday.getMonth()+1).toString().padStart(2,'0')}-${yesterday.getDate().toString().padStart(2,'0')}`;
+        data.continuousDays = data.studyRecord[ymd] ? data.continuousDays + 1 : 1;
+        saveData();
+    }
+}
+
+// 页面切换
+function show(id) {
+    document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
+    document.getElementById(id).classList.remove("hidden");
+}
+
+function goHome() {
+    if (studyStartTime) recordStudyTime();
+    updateDate(); randomSlogan();
+    show("home");
+}
+
+function randomSlogan() {
+    const idx = Math.floor(Math.random() * slogans.length);
+    document.getElementById("slogan").innerText = slogans[idx];
+}
+
+// 计时
+function startStudyTimer() { studyStartTime = new Date(); }
+function recordStudyTime() {
+    if (!studyStartTime) return;
+    const min = Math.floor((new Date() - studyStartTime) / 60000);
+    const today = getToday();
+    if (!data.studyRecord[today]) data.studyRecord[today] = { count:0, time:0 };
+    data.studyRecord[today].time += min;
+    saveData();
+    studyStartTime = null;
+}
+
+// 学习
+function goStudy(mode) {
+    updateDate();
+    const today = getToday();
+    currentStudyList = [];
+    data.words.forEach(w => {
+        if (mode === "new" && w.status === "new") currentStudyList.push(w);
+        if (mode === "review" && w.nextReview === today) currentStudyList.push(w);
+    });
+    currentStudyList = currentStudyList.slice(0, BATCH_SIZE);
+    if (currentStudyList.length === 0) { alert("✅ 今日任务完成！明天再来～"); return; }
+    currentIndex = 0;
+    startStudyTimer();
+    document.getElementById("studyTitle").innerText = mode === "new" ? "📖 学习新单词" : "🔁 复习单词";
+    show("studyPage");
+    renderWord();
+}
+
+function renderWord() {
+    const w = currentStudyList[currentIndex];
+    let info = `
+        <h3>${w.word}</h3>
+        <p>假名：${w.kana}</p>
+        <p>发音：${w.sound}</p>
+        <p>例句：${w.example}</p>
+        <p>搭配：${w.collocation}</p>
+        <p>📊 复习次数：${w.reviewCount}</p>
+    `;
+    if (w.nextReview) {
+        const days = Math.ceil((new Date(w.nextReview) - new Date()) / (1000*60*60*24));
+        info += `<p>⏰ 下次复习：${days} 天后</p>`;
+    }
+    document.getElementById("wordDisplay").innerHTML = info;
+}
+
+function markKnown() {
+    const w = currentStudyList[currentIndex];
+    w.status = "mastered"; w.reviewCount=6; w.nextReview="";
+    alert("✅ 已加入熟词库，不再复习");
+    nextWord(false);
+}
+function markUnknown() {
+    const w = currentStudyList[currentIndex];
+    w.status = "new"; w.reviewCount=0; w.nextReview="";
+    alert("🔁 已标记为生词，重新学习");
+    nextWord(false);
+}
+
+function nextWord(isForget) {
+    const w = currentStudyList[currentIndex];
+    if (isForget) { w.status="new"; w.reviewCount=0; w.nextReview=""; }
+    else {
+        w.reviewCount++;
+        if (w.reviewCount >= REVIEW_CURVE.length) { w.status="mastered"; w.nextReview=""; }
+        else {
+            const days = REVIEW_CURVE[w.reviewCount-1];
+            const nd = new Date(); nd.setDate(nd.getDate()+days);
+            w.nextReview = `${nd.getFullYear()}-${(nd.getMonth()+1).toString().padStart(2,'0')}-${nd.getDate().toString().padStart(2,'0')}`;
+            w.status = "studying";
+        }
+    }
+    const today = getToday();
+    if (!data.studyRecord[today]) data.studyRecord[today] = { count:0, time:0 };
+    data.studyRecord[today].count++;
+
+    currentIndex++;
+    if (currentIndex >= currentStudyList.length) {
+        recordStudyTime();
+        data.totalMoney += currentStudyList.length / 10;
+        checkMilestone();
+        saveData();
+        show("spellingPage");
+        return;
+    }
+    renderWord();
+}
+
+function checkMilestone() {
+    const m = data.milestones || [100,500,1000,2000,3000,4000,5000];
+    m.forEach(amount => {
+        if (data.totalMoney >= amount && !data.milestoneRewarded?.includes(amount)) {
+            alert(milestoneTexts[amount]);
+            if (!data.milestoneRewarded) data.milestoneRewarded = [];
+            data.milestoneRewarded.push(amount);
+        }
+    });
+}
+
+// 拼写
+function startSpelling() { spellingList = [...currentStudyList]; show("spellingPractice"); renderSpell(); }
+function renderSpell() {
+    if (spellingList.length === 0) { alert("🎉 全部正确！"); showResult(); return; }
+    const w = spellingList[0];
+    document.getElementById("spellPrompt").innerText = `请拼写：${w.kana}`;
+    document.getElementById("spellInput").value = "";
+    document.getElementById("spellInput").focus();
+}
+function checkSpelling() {
+    const input = document.getElementById("spellInput").value.trim();
+    const w = spellingList[0];
+    if (input === w.word) { spellingList.shift(); alert("✅ 正确！"); }
+    else { alert("❌ 错误，请再试一次"); }
+    renderSpell();
+}
+
+// 结果
+function showResult() {
+    let html = "";
+    currentStudyList.forEach(w => { html += `<p>${w.word} | 下次复习：${w.nextReview || "✅ 已掌握"}</p>`; });
+    document.getElementById("resultList").innerHTML = html;
+    show("resultPage");
+}
+
+// 攒钱进度
+function showOverview() {
+    updateDate();
+    const today = getToday();
+    const td = data.studyRecord[today] || { count:0, time:0 };
+    const totalCount = Object.values(data.studyRecord).reduce((s,v)=>s+v.count,0);
+    const totalTime = Object.values(data.studyRecord).reduce((s,v)=>s+v.time,0);
+
+    document.getElementById("totalMoneyText").innerText = `${data.totalMoney.toFixed(1)} 元`;
+    document.getElementById("streakText").innerText = `连续学习 ${data.continuousDays} 天`;
+    document.getElementById("todayCountText").innerText = `${td.count} 词`;
+    document.getElementById("totalCountText").innerText = `${totalCount} 词`;
+    document.getElementById("todayTimeText").innerText = `${td.time} 分钟`;
+    document.getElementById("totalTimeText").innerText = `${totalTime} 分钟`;
+
+    renderMonthCalendar();
+    show("overviewPage");
+}
+
+// 真·日历渲染（完全对齐星期）
+function renderMonthCalendar() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const firstWeekDay = firstDay.getDay(); // 0=日
+
+    const grid = document.getElementById("calendarGrid");
+    grid.innerHTML = "";
+
+    // 前面空白
+    for (let i=0; i<firstWeekDay; i++) {
+        const el = document.createElement("div");
+        el.className = "calendar-day";
+        grid.appendChild(el);
+    }
+
+    // 日期
+    for (let day=1; day<=daysInMonth; day++) {
+        const dateStr = `${year}-${(month+1).toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
+        const record = data.studyRecord[dateStr];
+        const count = record ? record.count : 0;
+
+        const el = document.createElement("div");
+        el.className = "calendar-day";
+        el.innerText = day;
+
+        if (count >= 20) el.classList.add("learned-30");
+        else if (count >= 10) el.classList.add("learned-20");
+        else if (count > 0) el.classList.add("learned-10");
+
+        grid.appendChild(el);
+    }
+}
+
+// 启动
+initWords().then(() => { updateDate(); goHome(); });
+</script>
+</body>
+</html>
