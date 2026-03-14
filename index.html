@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>日语单词攒钱计划</title>
     <style>
         * {
@@ -34,14 +35,13 @@
             margin: 0 0 10px 0;
             color: #2A6F38;
         }
-        /* ========== 统一所有按钮颜色：超低饱和度淡绿 ========== */
         button {
             width: 100%;
             padding: 16px;
             margin: 10px 0;
             border: none;
             border-radius: 14px;
-            background: #7FC590; /* 超低饱和统一绿 */
+            background: #7FC590;
             color: white;
             cursor: pointer;
             font-size: 16px;
@@ -51,10 +51,14 @@
         button:hover {
             opacity: 0.92;
         }
-        /* 三个按钮颜色完全一样，不再区分 */
         button.secondary { background: #7FC590; }
         button.danger    { background: #7FC590; }
-
+        button.small-btn {
+            width: auto;
+            padding: 8px 14px;
+            font-size: 14px;
+            margin: 0 5px;
+        }
         .hidden { display: none; }
 
         /* 首页 */
@@ -88,7 +92,6 @@
             align-items: center;
             margin-bottom: 16px;
         }
-        /* ========== 返回按钮：只留箭头，去掉文字 ========== */
         .back-btn {
             background: none;
             color: #4A9F5D;
@@ -146,7 +149,27 @@
         .money-title { font-size: 14px; color: #555; }
         .money-amount { font-size: 28px; font-weight: bold; color: #2A6F38; margin: 6px 0; }
 
-        /* ====================== 真·日历（带星期头部） ====================== */
+        /* 词书筛选样式 */
+        .book-filter {
+            margin: 20px 0;
+            padding: 16px;
+            background: #F9FFF9;
+            border-radius: 12px;
+            border: 1px solid #E2F4E8;
+        }
+        .book-filter-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2A6F38;
+            margin-bottom: 10px;
+        }
+        .book-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* 日历样式 */
         .calendar-section { margin-top: 24px; }
         .calendar-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 12px; }
         .week-header {
@@ -205,13 +228,14 @@
 <!-- 学习页面 -->
 <div id="studyPage" class="page hidden">
     <div class="study-header">
-        <button class="back-btn" onclick="goHome()">←</button> <!-- 只留箭头 -->
+        <button class="back-btn" onclick="goHome()">←</button>
         <div class="mark-btns">
             <button onclick="markKnown()">熟</button>
             <button onclick="markUnknown()">生</button>
         </div>
     </div>
     <h2 id="studyTitle"></h2>
+    <div id="wordProgress" style="font-size:14px; color:#666; margin-bottom:10px;">进度：1/10</div>
     <div id="wordDisplay" class="word-card"></div>
     <button onclick="nextWord(false)">✅ 记住了</button>
     <button class="danger" onclick="nextWord(true)">🔁 记错了</button>
@@ -223,6 +247,7 @@
     <p>已自动存入攒钱基金 ✨</p>
     <button onclick="startSpelling()">✍️ 强化拼写</button>
     <button class="secondary" onclick="showResult()">📋 学习小结</button>
+    <button class="danger" onclick="goStudy('new')">🔄 继续学习</button>
 </div>
 
 <!-- 拼写练习 -->
@@ -237,14 +262,27 @@
 <div id="resultPage" class="page hidden">
     <h2>📋 本次学习列表</h2>
     <div id="resultList"></div>
-    <button onclick="goHome()">←</button> <!-- 只留箭头 -->
+    <button onclick="goHome()">←</button>
+    <button class="secondary" onclick="goStudy('new')">🔄 继续学习</button>
 </div>
 
-<!-- 攒钱进度页 -->
+<!-- 攒钱进度页（新增词书筛选） -->
 <div id="overviewPage" class="page hidden">
     <div class="overview-header">
         <h2 class="overview-title">💰 我的攒钱进度</h2>
-        <button class="back-btn" onclick="goHome()">←</button> <!-- 只留箭头 -->
+        <button class="back-btn" onclick="goHome()">←</button>
+    </div>
+
+    <!-- 新增：词书筛选模块 -->
+    <div class="book-filter">
+        <div class="book-filter-title">📚 选择词书</div>
+        <div class="book-buttons">
+            <button class="small-btn" onclick="switchBook('n1.txt')">N1</button>
+            <button class="small-btn" onclick="switchBook('n2.txt')">N2</button>
+            <button class="small-btn" onclick="switchBook('n3.txt')">N3</button>
+            <button class="small-btn" onclick="switchBook('n4.txt')">N4</button>
+            <button class="small-btn" onclick="switchBook('n5.txt')">N5</button>
+        </div>
     </div>
 
     <div class="money-card">
@@ -262,21 +300,19 @@
 
     <div class="calendar-section">
         <div class="calendar-title">📅 本月学习日历</div>
-        
-        <!-- 真·星期头部 -->
         <div class="week-header">
             <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
         </div>
-        
         <div class="calendar" id="calendarGrid"></div>
         <div class="calendar-tip">浅绿=学习10个以上 | 中绿=10-20个 | 深绿=20个以上</div>
     </div>
 </div>
 
 <script>
-// 核心配置
+// 核心配置 - 修复单次学习数量（默认10个，可修改）
 const REVIEW_CURVE = [1,2,4,7,15,30];
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 10; // 单次学习10个单词
+let currentBook = "n1.txt"; // 默认词书
 
 let data = JSON.parse(localStorage.getItem("wordData")) || {
     words: [], studyRecord: {}, today: getToday(),
@@ -318,20 +354,48 @@ function getToday() {
     return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
 }
 
-// 初始化单词
+// 切换词书（核心新增功能）
+async function switchBook(bookName) {
+    currentBook = bookName;
+    data.words = []; // 清空当前单词库
+    await initWords(); // 重新加载选中的词书
+    alert(`✅ 已切换到${bookName.replace('.txt','')}词书！`);
+    saveData();
+}
+
+// 初始化单词（修复：加载指定词书）
 async function initWords() {
     if (data.words.length > 0) return;
     try {
-        const res = await fetch("n1.txt");
+        const res = await fetch(currentBook); // 加载选中的词书
         const text = await res.text();
         const lines = text.trim().split("\n");
-        data.words = lines.map(line => {
+        // 过滤空行，避免读取无效数据
+        const validLines = lines.filter(line => line.trim() && line.includes("|"));
+        data.words = validLines.map(line => {
             const [word, kana, sound, example, collocation] = line.split("|");
-            return { word, kana, sound, example, collocation, status: "new", reviewCount: 0, nextReview: "", addTime: getToday() };
+            return { 
+                word: word || "", 
+                kana: kana || "", 
+                sound: sound || "", 
+                example: example || "", 
+                collocation: collocation || "", 
+                status: "new", 
+                reviewCount: 0, 
+                nextReview: "", 
+                addTime: getToday() 
+            };
         });
         saveData();
     } catch (e) {
-        data.words = [{ word: "私", kana: "わたし", sound: "watashi", example: "私は学生です", collocation: "私たち", status: "new", reviewCount: 0, nextReview: "", addTime: getToday() }];
+        // 兜底单词库，避免空数据
+        data.words = [
+            { word: "私", kana: "わたし", sound: "watashi", example: "私は学生です", collocation: "私たち", status: "new", reviewCount: 0, nextReview: "", addTime: getToday() },
+            { word: "会社", kana: "かいしゃ", sound: "kaisha", example: "私は会社に行きます", collocation: "会社員", status: "new", reviewCount: 0, nextReview: "", addTime: getToday() },
+            { word: "学校", kana: "がっこう", sound: "gakkou", example: "学校は9時に始まります", collocation: "小学校", status: "new", reviewCount: 0, nextReview: "", addTime: getToday() },
+            { word: "友達", kana: "ともだち", sound: "tomodachi", example: "友達と遊びます", collocation: "親友", status: "new", reviewCount: 0, nextReview: "", addTime: getToday() },
+            { word: "食べる", kana: "たべる", sound: "taberu", example: "ご飯を食べる", collocation: "朝ご飯", status: "new", reviewCount: 0, nextReview: "", addTime: getToday() }
+        ];
     }
 }
 
@@ -377,22 +441,40 @@ function recordStudyTime() {
     studyStartTime = null;
 }
 
-// 学习
+// 学习（修复：批量取单词，显示进度）
 function goStudy(mode) {
     updateDate();
     const today = getToday();
     currentStudyList = [];
+    
+    // 修复：正确筛选单词，避免只取1个
     data.words.forEach(w => {
         if (mode === "new" && w.status === "new") currentStudyList.push(w);
         if (mode === "review" && w.nextReview === today) currentStudyList.push(w);
     });
-    currentStudyList = currentStudyList.slice(0, BATCH_SIZE);
-    if (currentStudyList.length === 0) { alert("✅ 今日任务完成！明天再来～"); return; }
+
+    // 如果可选单词不足10个，取全部；否则取10个
+    const takeCount = Math.min(BATCH_SIZE, currentStudyList.length);
+    currentStudyList = currentStudyList.slice(0, takeCount);
+
+    if (currentStudyList.length === 0) { 
+        alert("✅ 今日任务完成！明天再来～"); 
+        return; 
+    }
+    
     currentIndex = 0;
     startStudyTimer();
     document.getElementById("studyTitle").innerText = mode === "new" ? "📖 学习新单词" : "🔁 复习单词";
+    // 更新进度显示
+    updateStudyProgress();
     show("studyPage");
     renderWord();
+}
+
+// 新增：更新学习进度
+function updateStudyProgress() {
+    const progressText = `进度：${currentIndex + 1}/${currentStudyList.length}`;
+    document.getElementById("wordProgress").innerText = progressText;
 }
 
 function renderWord() {
@@ -451,6 +533,8 @@ function nextWord(isForget) {
         show("spellingPage");
         return;
     }
+    // 更新进度
+    updateStudyProgress();
     renderWord();
 }
 
@@ -509,7 +593,7 @@ function showOverview() {
     show("overviewPage");
 }
 
-// 真·日历渲染（完全对齐星期）
+// 日历渲染
 function renderMonthCalendar() {
     const now = new Date();
     const year = now.getFullYear();
@@ -517,7 +601,7 @@ function renderMonthCalendar() {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    const firstWeekDay = firstDay.getDay(); // 0=日
+    const firstWeekDay = firstDay.getDay();
 
     const grid = document.getElementById("calendarGrid");
     grid.innerHTML = "";
