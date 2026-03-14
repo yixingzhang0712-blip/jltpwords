@@ -3,1210 +3,435 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>日语单词攒钱计划 - 多词库版</title>
+    <title>日语单词攒钱计划</title>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
+        :root {
+            --primary: #2A6F38;
+            --secondary: #7FC590;
+            --bg: #F2F9F4;
+            --text: #333;
+            --white: #ffffff;
+            --danger: #E57373;
         }
-        body {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #F2F9F4;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .page {
-            background: white;
-            padding: 28px 24px;
-            border-radius: 18px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
-            transition: all 0.3s ease;
-        }
-        .word-card {
-            border: 1px solid #E2F4E8;
-            background: #F9FFF9;
-            padding: 22px;
-            margin: 16px 0;
-            border-radius: 14px;
-            line-height: 1.7;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .word-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(127, 197, 144, 0.15);
-        }
-        .word-card h3 {
-            font-size: 24px;
-            margin: 0 0 10px 0;
-            color: #2A6F38;
-        }
-        .word-info {
-            margin: 8px 0;
-            font-size: 15px;
-            color: #333;
-        }
-        .word-info label {
-            font-weight: bold;
-            color: #2A6F38;
-            margin-right: 6px;
-        }
-        .word-pronounce {
-            color: #666;
-            font-style: italic;
-            margin: 6px 0;
-        }
-        button {
-            width: 100%;
-            padding: 16px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 14px;
-            background: #7FC590;
-            color: white;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        button::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s ease;
-        }
-        button:hover::after {
-            left: 100%;
-        }
-        button:hover {
-            opacity: 0.92;
-            transform: translateY(-1px);
-        }
-        button:active {
-            transform: translateY(0);
-        }
-        button:disabled {
-            background: #b8d9c1;
-            cursor: not-allowed;
-            opacity: 0.7;
-            transform: none;
-        }
-        button.secondary { background: #68B378; }
-        button.danger    { background: #E57373; }
-        button.small-btn {
-            width: auto;
-            padding: 8px 14px;
-            font-size: 14px;
-            margin: 0 5px;
-        }
-        .hidden { display: none; }
 
-        .home-title {
-            text-align: center;
-            margin: 20px 0 36px 0;
-            animation: fadeIn 0.8s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .home-title h1 {
-            font-size: 28px;
-            color: #2A6F38;
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             margin: 0;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .home-title p {
-            font-size: 16px;
-            color: #555;
-            margin-top: 10px;
             line-height: 1.6;
         }
-        .slogan {
-            font-size: 17px;
-            color: #388E3C;
-            font-weight: bold;
-            margin-top: 12px;
-            animation: pulse 2s infinite ease-in-out;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-        }
-        .button-group { 
-            margin-top: 20px; 
-            display: grid;
-            gap: 12px;
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
         }
 
-        .study-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        .back-btn {
-            background: none;
-            color: #4A9F5D;
-            font-size: 22px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            padding: 0;
-            width: auto;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .back-btn:hover {
-            color: #2A6F38;
-        }
-        .mark-btns button {
-            width: auto;
-            padding: 8px 14px;
-            font-size: 15px;
-            margin-left: 6px;
-            display: inline;
-            border-radius: 10px;
-        }
+        .page { display: none; width: 100%; animation: fadeIn 0.3s ease; }
+        .page.active { display: flex; flex-direction: column; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .overview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .card {
+            background: var(--white);
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             margin-bottom: 20px;
         }
-        .overview-title {
-            font-size: 22px;
-            font-weight: bold;
-            color: #2A6F38;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .stat-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin: 20px 0;
-        }
-        .stat-card {
-            background: #F9FFF9;
-            border: 1px solid #E2F4E8;
-            border-radius: 12px;
+
+        h1, h2 { color: var(--primary); text-align: center; margin-top: 0; }
+        .slogan { font-size: 14px; color: #666; text-align: center; margin-bottom: 30px; }
+
+        button {
+            background: var(--secondary);
+            color: white;
+            border: none;
             padding: 16px;
-            text-align: center;
-            transition: transform 0.2s ease;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+            width: 100%;
         }
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(127, 197, 144, 0.1);
-        }
-        .stat-card .label { font-size: 13px; color: #666; margin-bottom: 4px; }
-        .stat-card .value { font-size: 18px; font-weight: bold; color: #2A6F38; }
-        .money-card {
-            background: linear-gradient(90deg, #F2F9F4, #E8F5EC);
-            border-radius: 14px;
-            padding: 20px;
-            margin: 16px 0;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .money-card::before {
-            content: '';
-            position: absolute;
-            top: -20px;
-            right: -20px;
-            width: 80px;
-            height: 80px;
-            background: rgba(127, 197, 144, 0.1);
-            border-radius: 50%;
-        }
-        .money-title { font-size: 14px; color: #555; }
-        .money-amount { font-size: 28px; font-weight: bold; color: #2A6F38; margin: 6px 0; }
+        button:active { transform: scale(0.98); opacity: 0.9; }
+        button.outline { background: transparent; border: 2px solid var(--secondary); color: var(--secondary); }
+        button.danger { background: var(--danger); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
 
-        .calendar-section { margin-top: 24px; }
-        .calendar-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-        .week-header {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
+        .word-display { font-size: 32px; font-weight: bold; color: var(--primary); text-align: center; margin: 20px 0; }
+        .word-info { font-size: 15px; color: #555; border-top: 1px solid #eee; padding-top: 15px; }
+        .info-item { margin-bottom: 8px; }
+        .label { font-weight: bold; color: var(--primary); margin-right: 5px; }
+
+        .progress-bar { height: 6px; background: #eee; border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--secondary); transition: width 0.3s; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-box { background: var(--white); padding: 15px; border-radius: 12px; text-align: center; }
+        .stat-val { font-size: 20px; font-weight: bold; color: var(--primary); }
+        .stat-lbl { font-size: 12px; color: #888; }
+
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+        .cal-day { aspect-ratio: 1; border-radius: 4px; background: #eef2ef; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+        .cal-active-1 { background: #c8e6c9; }
+        .cal-active-2 { background: #81c784; }
+        .cal-active-3 { background: #4caf50; color: white; }
+        .cal-today { border: 2px solid var(--primary); }
+
+        .loading, .error { text-align: center; padding: 20px; font-size: 16px; }
+        .error { color: var(--danger); }
+        .hidden { display: none !important; }
+
+        .spell-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: 18px;
+            margin-bottom: 20px;
             text-align: center;
-            margin-bottom: 6px;
         }
-        .week-header span {
-            font-size: 12px;
-            color: #999;
-            font-weight: 500;
-        }
-        .calendar {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-        }
-        .calendar-day {
-            aspect-ratio: 1/1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            font-size: 13px;
-            background: #f8f8f8;
+        .spell-input:focus { outline: none; border-color: var(--secondary); }
+
+        .spell-hint {
+            font-size: 14px;
             color: #666;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-        .calendar-day:hover {
-            transform: scale(1.05);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        }
-        .calendar-day.learned-10 { background: #E6F7E9; color: #2A6F38; }
-        .calendar-day.learned-20 { background: #CEF0D4; color: #2A6F38; }
-        .calendar-day.learned-30 { background: #A6E2AF; color: #2A6F38; font-weight: bold; }
-        .calendar-day.today {
-            border: 2px solid #2A6F38;
-        }
-        .calendar-tip {
-            font-size: 11px;
-            color: #bbb;
-            margin-top: 10px;
-            line-height: 1.4;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8fff9;
+            border-radius: 8px;
         }
 
-        .spell-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        #spellInput {
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        #spellInput:focus {
-            outline: none;
-            border-color: #7FC590 !important;
-            box-shadow: 0 0 0 3px rgba(127, 197, 144, 0.1);
-        }
-        
-        .loader {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #E2F4E8;
-            border-top: 4px solid #7FC590;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-            display: none;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
         .toast {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
-            transform: translateX(-50%) translateY(100px);
+            transform: translateX(-50%) translateY(50px);
             background: rgba(42, 111, 56, 0.9);
             color: white;
             padding: 12px 20px;
             border-radius: 8px;
             font-size: 14px;
-            z-index: 9999;
-            transition: transform 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 999;
+            opacity: 0;
+            transition: all 0.3s;
         }
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-        
-        /* 加载状态样式 */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255,255,255,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9998;
-            display: none;
-        }
-        
-        /* 新增：词库选择样式 */
-        .book-selector {
-            margin: 20px 0;
-            padding: 16px;
-            background: #F9FFF9;
-            border-radius: 14px;
-            border: 1px solid #E2F4E8;
-        }
-        .book-selector-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #2A6F38;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .book-buttons {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 8px;
-        }
-        .book-btn {
-            padding: 12px 8px;
-            font-size: 14px;
-            border-radius: 10px;
-            background: #f0f8f2;
-            color: #2A6F38;
-            border: 1px solid #E2F4E8;
-            transition: all 0.2s ease;
-        }
-        .book-btn.active {
-            background: #7FC590;
-            color: white;
-            border-color: #7FC590;
-        }
-        .current-book-info {
-            text-align: center;
-            font-size: 14px;
-            color: #666;
-            margin: 10px 0;
-            padding: 8px;
-            background: #f8fff9;
-            border-radius: 8px;
-        }
-        
-        @media (max-width: 768px) {
-            body { padding: 15px; }
-            .page { padding: 24px 20px; }
-            .stat-grid { grid-template-columns: 1fr; }
-            .book-buttons { grid-template-columns: repeat(2, 1fr); }
-        }
-        
-        @media (max-width: 480px) {
-            body { padding: 10px; }
-            .page { padding: 20px 16px; }
-            .word-card h3 { font-size: 20px; }
-            .money-amount { font-size: 24px; }
-            .home-title h1 { font-size: 24px; }
-            button { padding: 14px; font-size: 15px; }
-            .word-info { font-size: 14px; }
-            .book-buttons { grid-template-columns: 1fr; }
-        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        .book-selector { margin: 20px 0; }
+        .book-title { text-align: center; font-size: 16px; color: var(--primary); margin-bottom: 10px; }
+        .book-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .book-btn { padding: 10px 5px; font-size: 14px; border-radius: 8px; background: #f0f8f2; border: 1px solid #d5e9d9; color: var(--primary); }
+        .book-btn.active { background: var(--secondary); color: white; border-color: var(--secondary); }
+        .current-book { text-align: center; font-size: 14px; color: #666; margin: 10px 0; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <div id="loadingPage" class="page active">
+            <div class="loading">正在加载词库...</div>
+            <div id="loadError" class="error hidden">加载失败</div>
+        </div>
 
-<div class="loading-overlay" id="loadingOverlay">
-    <div class="loader"></div>
-</div>
-<div class="toast" id="toast"></div>
+        <div id="homePage" class="page">
+            <div class="card">
+                <h1>日语单词攒钱计划</h1>
+                <p class="slogan">背一个单词，存一笔财富 🤑</p>
 
-<div id="home" class="page">
-    <div class="home-title">
-        <h1>🏠 单词攒钱计划</h1>
-        <p>知识就是金钱<br>背一个单词，存一笔财富 🤑</p>
-        <p class="slogan" id="slogan">今日目标：背完10个单词</p>
-    </div>
+                <div class="book-selector">
+                    <div class="book-title">📚 选择单词本</div>
+                    <div class="book-grid">
+                        <button class="book-btn" onclick="selectBook('n1.txt','N1')">N1</button>
+                        <button class="book-btn" onclick="selectBook('n2.txt','N2')">N2</button>
+                        <button class="book-btn" onclick="selectBook('n3.txt','N3')">N3</button>
+                        <button class="book-btn" onclick="selectBook('n4.txt','N4')">N4</button>
+                        <button class="book-btn" onclick="selectBook('n5.txt','N5')">N5</button>
+                    </div>
+                    <div class="current-book" id="currentBookText">未选择单词本</div>
+                </div>
 
-    <!-- 新增：词库选择区域 -->
-    <div class="book-selector">
-        <div class="book-selector-title">📚 选择单词本</div>
-        <div class="current-book-info" id="currentBookInfo">当前：未选择单词本</div>
-        <div class="book-buttons" id="bookButtons">
-            <button class="book-btn" onclick="selectBook('wordlist1.txt', '单词本1 - 初级')">单词本1</button>
-            <button class="book-btn" onclick="selectBook('wordlist2.txt', '单词本2 - 中级')">单词本2</button>
-            <button class="book-btn" onclick="selectBook('wordlist3.txt', '单词本3 - 高级')">单词本3</button>
-            <button class="book-btn" onclick="selectBook('wordlist4.txt', '单词本4 - 日常')">单词本4</button>
-            <button class="book-btn" onclick="selectBook('wordlist5.txt', '单词本5 - 商务')">单词本5</button>
+                <button id="btnStudyNew" disabled onclick="startStudy('new')">📖 学习新单词</button>
+                <button id="btnStudyReview" disabled onclick="startStudy('review')">🔁 复习单词</button>
+                <button class="danger" onclick="switchPage('statsPage')">💰 攒钱进度</button>
+            </div>
+        </div>
+
+        <div id="studyPage" class="page">
+            <div class="card">
+                <h2 id="studyTitle">学习中</h2>
+                <div class="progress-bar"><div class="progress-fill" id="studyProgress"></div></div>
+                <div class="word-display" id="showWord"></div>
+                <div class="word-info">
+                    <div class="info-item"><span class="label">发音：</span><span id="p"></span></div>
+                    <div class="info-item"><span class="label">释义：</span><span id="m"></span></div>
+                    <div class="info-item"><span class="label">例句：</span><span id="e"></span></div>
+                    <div class="info-item"><span class="label">搭配：</span><span id="c"></span></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <button onclick="markKnown()">✅ 熟</button>
+                    <button class="danger" onclick="markUnknown()">❌ 生</button>
+                </div>
+                <button onclick="next(true)">记住了 ➜</button>
+                <button class="outline" onclick="next(false)">记错了 🔄</button>
+                <button class="outline" onclick="switchPage('homePage')">返回首页</button>
+            </div>
+        </div>
+
+        <div id="spellPage" class="page">
+            <div class="card">
+                <h2>✍️ 拼写练习</h2>
+                <div class="progress-bar"><div class="progress-fill" id="spellProgress"></div></div>
+                <div class="spell-hint" id="spellHint">
+                    <p>提示：输入汉字或假名均可</p>
+                    <p id="spellWordInfo"></p>
+                </div>
+                <input class="spell-input" id="spellInput" placeholder="输入单词（汉字/假名）">
+                <button onclick="checkSpell()">提交答案</button>
+                <button class="outline" onclick="switchPage('homePage')">完成</button>
+            </div>
+        </div>
+
+        <div id="statsPage" class="page">
+            <div class="card">
+                <h2>💰 我的攒钱进度</h2>
+                <div class="stat-grid">
+                    <div class="stat-box"><div class="stat-val" id="money">0</div><div class="stat-lbl">累计金额(元)</div></div>
+                    <div class="stat-box"><div class="stat-val" id="total">0</div><div class="stat-lbl">累计单词</div></div>
+                    <div class="stat-box"><div class="stat-val" id="today">0</div><div class="stat-lbl">今日学习</div></div>
+                    <div class="stat-box"><div class="stat-val" id="streak">0</div><div class="stat-lbl">连续天数</div></div>
+                </div>
+                <button onclick="switchPage('homePage')">返回</button>
+                <button class="danger" onclick="resetData()">重置数据</button>
+            </div>
         </div>
     </div>
+    <div class="toast" id="toast"></div>
 
-    <div class="button-group">
-        <button onclick="goStudy('new')" id="btnNewWord" disabled>📖 学习新单词</button>
-        <button class="secondary" onclick="goStudy('review')" id="btnReviewWord" disabled>🔁 复习已学单词</button>
-        <button class="danger" onclick="showOverview()" id="btnOverview">💰 攒钱进度</button>
-    </div>
-</div>
-
-<div id="studyPage" class="page hidden">
-    <div class="study-header">
-        <button class="back-btn" onclick="goHome()">← 返回</button>
-        <div class="mark-btns">
-            <button onclick="markKnown()">熟</button>
-            <button onclick="markUnknown()">生</button>
-        </div>
-    </div>
-    <h2 id="studyTitle"></h2>
-    <div id="wordProgress" style="font-size:14px; color:#666; margin-bottom:10px;">进度：1/10</div>
-    <div id="wordDisplay" class="word-card"></div>
-    <button onclick="nextWord(false)">✅ 记住了</button>
-    <button class="danger" onclick="nextWord(true)">🔁 记错了</button>
-</div>
-
-<div id="spellingPage" class="page hidden">
-    <h2>🎉 学习完成！</h2>
-    <p>已自动存入攒钱基金 ✨</p>
-    <div id="currentStudySummary" style="margin: 15px 0; padding: 10px; background: #F9FFF9; border-radius: 8px; font-size: 14px;"></div>
-    <button onclick="startSpelling()">✍️ 强化拼写</button>
-    <button class="secondary" onclick="showResult()">📋 学习小结</button>
-    <button class="danger" onclick="continueStudy()">🔄 继续学习</button>
-</div>
-
-<div id="spellingPractice" class="page hidden">
-    <div class="spell-header">
-        <button class="back-btn" onclick="show('spellingPage')">← 返回</button>
-        <h2 style="margin:0;">✍️ 拼写练习</h2>
-        <span id="spellProgress" style="font-size:14px; color:#666;"></span>
-    </div>
-    <div id="spellPrompt" style="font-size:17px; margin-bottom:10px;">请输入单词：</div>
-    <input type="text" id="spellInput" placeholder="请输入单词" style="width:100%; padding:14px; border-radius:12px; border:1px solid #eee; margin:10px 0; font-size:16px;">
-    <button onclick="checkSpelling()">提交答案</button>
-</div>
-
-<div id="resultPage" class="page hidden">
-    <h2>📋 本次学习列表</h2>
-    <div id="resultList"></div>
-    <button onclick="goHome()">← 返回首页</button>
-    <button class="secondary" onclick="continueStudy()">🔄 继续学习</button>
-</div>
-
-<div id="overviewPage" class="page hidden">
-    <div class="overview-header">
-        <h2 class="overview-title">💰 我的攒钱进度</h2>
-        <button class="back-btn" onclick="goHome()">←</button>
-    </div>
-
-    <div class="money-card">
-        <div class="money-title">累计已攒</div>
-        <div class="money-amount" id="totalMoneyText">0.0 元</div>
-        <div style="font-size:14px; color:#555;" id="streakText">连续学习 0 天</div>
-    </div>
-
-    <div class="stat-grid">
-        <div class="stat-card"><div class="label">今日学习</div><div class="value" id="todayCountText">0 词</div></div>
-        <div class="stat-card"><div class="label">累计学习</div><div class="value" id="totalCountText">0 词</div></div>
-    </div>
-
-    <div class="calendar-section">
-        <div class="calendar-title">📅 本月学习日历</div>
-        <div class="week-header">
-            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
-        </div>
-        <div class="calendar" id="calendarGrid"></div>
-        <div class="calendar-tip">📌 浅绿=学习1-9个 | 中绿=10-19个 | 深绿=20个以上</div>
-    </div>
-</div>
-
-<script>
-// 核心配置
-const REVIEW_CURVE = [1,2,4,7,15,30]; // 复习间隔（天）
-const BATCH_SIZE = 10; // 每次学习单词数量
-const MONEY_PER_WORD = 0.1; // 每个单词攒钱金额
-
-// 全局变量 - 新增多词库相关
-let bookConfig = {
-    currentBookFile: '',    // 当前选中的词库文件
-    currentBookName: '',    // 当前选中的词库名称
-    bookWords: {},          // 各词库的单词列表 {文件名: [单词列表]}
-    bookDetailsCache: {}    // 各词库的单词详情缓存 {文件名: {单词: 详情}}
-};
-let userData = {
-    learnedWords: {}, // 已学单词 {单词: {reviewDays: 0, lastReview: '', count: 0, book: 文件名}}
-    totalWords: 0,    // 累计学习单词数
-    todayWords: 0,    // 今日学习单词数
-    streakDays: 0,    // 连续学习天数
-    lastStudyDate: '',// 最后学习日期
-    calendarData: {}  // 日历学习数据 {date: count}
-};
-let currentStudyMode = 'new'; // 学习模式：new/review
-let currentStudyBatch = [];   // 当前学习批次
-let currentWordIndex = 0;     // 当前单词索引
-let spellingWords = [];       // 拼写练习单词
-let currentSpellIndex = 0;    // 当前拼写索引
-
-// 页面加载初始化
-document.addEventListener('DOMContentLoaded', function() {
-    // 显示加载状态
-    showLoading(true);
-    
-    // 加载本地存储数据
-    loadUserData();
-    
-    // 初始化词库选择按钮状态
-    initBookButtons();
-    
-    // 隐藏加载状态
-    showLoading(false);
-    // 更新页面显示
-    updateOverviewData();
-    updateSlogan();
-});
-
-// 新增：选择单词本
-function selectBook(fileName, bookName) {
-    // 移除所有按钮的激活状态
-    document.querySelectorAll('.book-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    // 激活当前按钮
-    event.target.classList.add('active');
-    
-    // 更新当前词库信息
-    bookConfig.currentBookFile = fileName;
-    bookConfig.currentBookName = bookName;
-    document.getElementById('currentBookInfo').textContent = `当前：${bookName}`;
-    
-    // 加载选中的词库
-    showLoading(true);
-    loadWordList(fileName)
-        .then(() => {
-            // 启用学习按钮
-            document.getElementById('btnNewWord').disabled = false;
-            document.getElementById('btnReviewWord').disabled = false;
-            showToast(`✅ 已加载 ${bookName}（${bookConfig.bookWords[fileName].length} 个单词）`);
-        })
-        .catch((error) => {
-            showToast(`❌ 加载失败：${error.message}`);
-            console.error('词库加载失败：', error);
-            // 禁用学习按钮
-            document.getElementById('btnNewWord').disabled = true;
-            document.getElementById('btnReviewWord').disabled = true;
-        })
-        .finally(() => {
-            showLoading(false);
-        });
-}
-
-// 新增：初始化词库按钮
-function initBookButtons() {
-    // 从本地存储读取上次选中的词库
-    const savedBookFile = localStorage.getItem('currentWordBook');
-    const savedBookName = localStorage.getItem('currentWordBookName');
-    
-    if (savedBookFile && savedBookName) {
-        // 恢复上次选中的词库
-        bookConfig.currentBookFile = savedBookFile;
-        bookConfig.currentBookName = savedBookName;
-        document.getElementById('currentBookInfo').textContent = `当前：${savedBookName}`;
-        
-        // 激活对应按钮
-        const buttons = document.querySelectorAll('.book-btn');
-        buttons.forEach(btn => {
-            if (btn.textContent.includes(savedBookName.split(' - ')[0])) {
-                btn.classList.add('active');
-            }
-        });
-        
-        // 预加载上次的词库
-        showLoading(true);
-        loadWordList(savedBookFile)
-            .then(() => {
-                document.getElementById('btnNewWord').disabled = false;
-                document.getElementById('btnReviewWord').disabled = false;
-            })
-            .catch(() => {
-                document.getElementById('btnNewWord').disabled = true;
-                document.getElementById('btnReviewWord').disabled = true;
-            })
-            .finally(() => {
-                showLoading(false);
-            });
-    }
-}
-
-// 优化：加载指定词库文件
-async function loadWordList(fileName) {
-    // 如果已加载过，直接返回
-    if (bookConfig.bookWords[fileName]) {
-        return bookConfig.bookWords[fileName];
-    }
-    
-    try {
-        const response = await fetch(fileName);
-        if (!response.ok) {
-            throw new Error(`无法加载 ${fileName} (${response.status})，请确认文件已放在HTML同目录`);
-        }
-        
-        const content = await response.text();
-        // 解析TXT内容，每行一个单词
-        const words = content.split('\n')
-            .map(word => word.trim())
-            .filter(word => word.length > 0);
-        
-        if (words.length === 0) {
-            throw new Error(`${fileName} 中未找到有效单词`);
-        }
-        
-        // 存储该词库的单词列表
-        bookConfig.bookWords[fileName] = words;
-        // 初始化该词库的缓存
-        if (!bookConfig.bookDetailsCache[fileName]) {
-            bookConfig.bookDetailsCache[fileName] = {};
-        }
-        
-        // 保存当前选中的词库到本地
-        localStorage.setItem('currentWordBook', fileName);
-        localStorage.setItem('currentWordBookName', bookConfig.currentBookName);
-        
-        return words;
-    } catch (error) {
-        throw error;
-    }
-}
-
-// 优化：获取指定词库的单词详情
-async function getWordDetails(word, bookFile) {
-    // 确保该词库的缓存存在
-    if (!bookConfig.bookDetailsCache[bookFile]) {
-        bookConfig.bookDetailsCache[bookFile] = {};
-    }
-    // 先检查缓存
-    if (bookConfig.bookDetailsCache[bookFile][word]) {
-        return bookConfig.bookDetailsCache[bookFile][word];
-    }
-
-    try {
-        // 使用免费的日语单词API获取详情
-        const apiUrl = `https://api.jisho.org/v1/search/words?keyword=${encodeURIComponent(word)}`;
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-
-        if (!data.data || data.data.length === 0) {
-            // API无返回结果时的默认值
-            const defaultDetails = {
-                pronounce: '暂无发音',
-                meaning: '暂无释义',
-                example: '暂无例句',
-                collocation: '暂无常用搭配'
-            };
-            bookConfig.bookDetailsCache[bookFile][word] = defaultDetails;
-            return defaultDetails;
-        }
-
-        // 解析API返回数据
-        const wordData = data.data[0];
-        const details = {
-            // 发音
-            pronounce: wordData.japanese && wordData.japanese[0].reading 
-                ? `「${wordData.japanese[0].reading}」` 
-                : '暂无发音',
-            
-            // 释义
-            meaning: wordData.senses && wordData.senses[0].english_definitions
-                ? wordData.senses[0].english_definitions.join('；')
-                : '暂无释义',
-            
-            // 例句（简化处理）
-            example: wordData.senses && wordData.senses[0].examples && wordData.senses[0].examples[0]
-                ? wordData.senses[0].examples[0].text
-                : '暂无例句',
-            
-            // 常用搭配
-            collocation: wordData.senses && wordData.senses[0].parts_of_speech
-                ? `词性：${wordData.senses[0].parts_of_speech.join('；')}`
-                : '暂无常用搭配'
+    <script>
+        const CONFIG = {
+            BATCH: 10,
+            MONEY: 0.1,
+            REVIEW: [1, 2, 4, 7, 15, 30]
         };
 
-        // 存入对应词库的缓存
-        bookConfig.bookDetailsCache[bookFile][word] = details;
-        return details;
-
-    } catch (error) {
-        console.error(`获取单词 ${word} 详情失败：`, error);
-        // API调用失败时的默认值
-        const defaultDetails = {
-            pronounce: '暂无发音',
-            meaning: '暂无释义',
-            example: '暂无例句',
-            collocation: '暂无常用搭配'
+        let G = {
+            book: "",
+            bookName: "",
+            words: { n1: [], n2: [], n3: [], n4: [], n5: [] },
+            cache: {}, // { word: { word, reading, meaning, example, collocation } }
+            user: JSON.parse(localStorage.getItem("jpstudy") || '{"learned":{},"total":0,"today":0,"streak":0,"last":"","cal":{}}'),
+            mode: "",
+            batch: [],
+            idx: 0,
+            spell: [],
+            sidx: 0
         };
-        bookConfig.bookDetailsCache[bookFile][word] = defaultDetails;
-        return defaultDetails;
-    }
-}
 
-// 显示加载状态
-function showLoading(show) {
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    loadingOverlay.style.display = show ? 'flex' : 'none';
-}
+        init();
 
-// 页面切换函数
-function show(pageId) {
-    // 隐藏所有页面
-    document.querySelectorAll('.page').forEach(page => {
-        page.classList.add('hidden');
-    });
-    // 显示目标页面
-    document.getElementById(pageId).classList.remove('hidden');
-}
+        async function init() {
+            await loadAllBooks();
+            switchPage("homePage");
+            updateUI();
+        }
 
-// 返回首页
-function goHome() {
-    show('home');
-}
-
-// 优化：进入学习页面（适配多词库）
-async function goStudy(mode) {
-    // 检查是否选择并加载了词库
-    if (!bookConfig.currentBookFile || !bookConfig.bookWords[bookConfig.currentBookFile]) {
-        showToast('请先选择并加载一个单词本');
-        return;
-    }
-
-    showLoading(true);
-    
-    currentStudyMode = mode;
-    currentStudyBatch = [];
-    currentWordIndex = 0;
-    const currentBookFile = bookConfig.currentBookFile;
-    const currentBookWords = bookConfig.bookWords[currentBookFile];
-
-    try {
-        // 生成学习批次
-        if (mode === 'new') {
-            // 学习新单词：筛选当前词库中未学过的单词
-            const newWords = currentBookWords.filter(word => 
-                !userData.learnedWords[word] || userData.learnedWords[word].book !== currentBookFile
-            );
-            if (newWords.length === 0) {
-                showToast(`恭喜！${bookConfig.currentBookName} 的单词都已学习过了`);
-                return;
+        async function loadAllBooks() {
+            try {
+                for (let i = 1; i <= 5; i++) {
+                    let f = `n${i}.txt`;
+                    let r = await fetch(f);
+                    if (!r.ok) continue;
+                    let t = await r.text();
+                    G.words[`n${i}`] = t.split("\n").map(x => x.trim()).filter(x => x);
+                }
+            } catch (e) {
+                console.error("加载词库失败", e);
             }
-            // 随机选取BATCH_SIZE个单词
-            currentStudyBatch = getRandomItems(newWords, BATCH_SIZE);
-            document.getElementById('studyTitle').textContent = `📖 学习新单词（${bookConfig.currentBookName}）`;
-        } else {
-            // 复习单词：筛选当前词库中需要复习的单词
-            const reviewWords = Object.keys(userData.learnedWords).filter(word => {
-                const wordData = userData.learnedWords[word];
-                // 只复习当前词库的单词
-                if (wordData.book !== currentBookFile) return false;
-                const daysSinceLastReview = getDaysBetween(wordData.lastReview, getTodayDate());
-                return daysSinceLastReview >= REVIEW_CURVE[Math.min(wordData.reviewDays, REVIEW_CURVE.length - 1)];
-            });
-
-            if (reviewWords.length === 0) {
-                showToast(`暂无需要复习的单词（${bookConfig.currentBookName}）`);
-                return;
-            }
-            // 随机选取BATCH_SIZE个单词
-            currentStudyBatch = getRandomItems(reviewWords, BATCH_SIZE);
-            document.getElementById('studyTitle').textContent = `🔁 复习单词（${bookConfig.currentBookName}）`;
         }
 
-        // 预加载第一个单词的详情
-        await showWord(currentWordIndex);
-        show('studyPage');
-
-    } catch (error) {
-        showToast(`加载学习内容失败：${error.message}`);
-        console.error(error);
-    } finally {
-        showLoading(false);
-    }
-}
-
-// 优化：显示当前单词（适配多词库）
-async function showWord(index) {
-    if (index >= currentStudyBatch.length) {
-        // 学习完成
-        completeStudy();
-        return;
-    }
-
-    const word = currentStudyBatch[index];
-    const currentBookFile = bookConfig.currentBookFile;
-    
-    // 更新进度
-    document.getElementById('wordProgress').textContent = `进度：${index + 1}/${currentStudyBatch.length}`;
-    
-    // 获取当前词库的单词详情
-    const details = await getWordDetails(word, currentBookFile);
-    
-    // 显示单词卡片（包含完整信息）
-    const wordCard = document.getElementById('wordDisplay');
-    wordCard.innerHTML = `
-        <h3>${word}</h3>
-        <div class="word-pronounce">${details.pronounce}</div>
-        <div class="word-info"><label>释义：</label>${details.meaning}</div>
-        <div class="word-info"><label>例句：</label>${details.example}</div>
-        <div class="word-info"><label>搭配：</label>${details.collocation}</div>
-    `;
-}
-
-// 优化：下一个单词（记录所属词库）
-async function nextWord(isWrong) {
-    const currentWord = currentStudyBatch[currentWordIndex];
-    const currentBookFile = bookConfig.currentBookFile;
-    
-    // 更新学习记录
-    if (!userData.learnedWords[currentWord] || userData.learnedWords[currentWord].book !== currentBookFile) {
-        // 新单词（或不同词库的同单词）
-        userData.learnedWords[currentWord] = {
-            reviewDays: 0,
-            lastReview: getTodayDate(),
-            count: 1,
-            book: currentBookFile // 记录所属词库
-        };
-        userData.totalWords++;
-        userData.todayWords++;
-    } else {
-        // 复习单词
-        const wordData = userData.learnedWords[currentWord];
-        wordData.count++;
-        wordData.lastReview = getTodayDate();
-        // 如果答对了，增加复习间隔；答错了重置
-        if (!isWrong) {
-            wordData.reviewDays = Math.min(wordData.reviewDays + 1, REVIEW_CURVE.length - 1);
-        } else {
-            wordData.reviewDays = 0;
-        }
-    }
-
-    // 更新日历数据
-    updateCalendarData();
-    // 保存数据
-    saveUserData();
-    // 显示提示
-    showToast(isWrong ? '再记一遍吧！' : '真棒！继续加油');
-
-    // 下一个单词
-    currentWordIndex++;
-    await showWord(currentWordIndex);
-}
-
-// 优化：标记单词为熟悉/陌生（关联词库）
-function markKnown() {
-    const currentWord = currentStudyBatch[currentWordIndex];
-    const currentBookFile = bookConfig.currentBookFile;
-    
-    if (userData.learnedWords[currentWord] && userData.learnedWords[currentWord].book === currentBookFile) {
-        userData.learnedWords[currentWord].reviewDays = Math.min(userData.learnedWords[currentWord].reviewDays + 2, REVIEW_CURVE.length - 1);
-        saveUserData();
-        showToast('标记为熟悉，下次复习间隔延长');
-    }
-}
-
-function markUnknown() {
-    const currentWord = currentStudyBatch[currentWordIndex];
-    const currentBookFile = bookConfig.currentBookFile;
-    
-    if (userData.learnedWords[currentWord] && userData.learnedWords[currentWord].book === currentBookFile) {
-        userData.learnedWords[currentWord].reviewDays = 0;
-        saveUserData();
-        showToast('标记为陌生，将尽快安排复习');
-    }
-}
-
-// 完成学习
-function completeStudy() {
-    // 计算本次攒钱金额
-    const moneyEarned = currentStudyBatch.length * MONEY_PER_WORD;
-    // 更新学习小结
-    document.getElementById('currentStudySummary').innerHTML = `
-        本次学习（${bookConfig.currentBookName}）：${currentStudyBatch.length} 个单词<br>
-        累计攒钱：+${moneyEarned.toFixed(1)} 元<br>
-        总计已攒：${(Object.keys(userData.learnedWords).length * MONEY_PER_WORD).toFixed(1)} 元
-    `;
-    // 准备拼写练习单词
-    spellingWords = [...currentStudyBatch];
-    // 更新连续学习天数
-    updateStreakDays();
-    // 保存数据
-    saveUserData();
-    // 更新概览数据
-    updateOverviewData();
-    // 显示完成页面
-    show('spellingPage');
-}
-
-// 开始拼写练习
-function startSpelling() {
-    if (spellingWords.length === 0) {
-        showToast('暂无单词可练习');
-        return;
-    }
-    currentSpellIndex = 0;
-    showSpellingWord();
-    show('spellingPractice');
-}
-
-// 显示拼写单词
-function showSpellingWord() {
-    if (currentSpellIndex >= spellingWords.length) {
-        showToast('拼写练习完成！');
-        show('spellingPage');
-        return;
-    }
-    // 更新进度
-    document.getElementById('spellProgress').textContent = `${currentSpellIndex + 1}/${spellingWords.length}`;
-    // 显示提示
-    document.getElementById('spellPrompt').textContent = `请输入单词：`;
-    // 清空输入框
-    document.getElementById('spellInput').value = '';
-    document.getElementById('spellInput').focus();
-}
-
-// 检查拼写答案
-function checkSpelling() {
-    const input = document.getElementById('spellInput').value.trim();
-    const correctWord = spellingWords[currentSpellIndex];
-
-    if (input === '') {
-        showToast('请输入单词');
-        return;
-    }
-
-    if (input === correctWord) {
-        showToast('✅ 正确！');
-        currentSpellIndex++;
-        setTimeout(showSpellingWord, 1000);
-    } else {
-        showToast(`❌ 错误，正确答案：${correctWord}`);
-        // 清空输入框，方便重新输入
-        document.getElementById('spellInput').value = '';
-    }
-}
-
-// 优化：显示学习结果（适配多词库）
-function showResult() {
-    const resultList = document.getElementById('resultList');
-    resultList.innerHTML = '';
-    const currentBookFile = bookConfig.currentBookFile;
-    
-    currentStudyBatch.forEach(async (word, index) => {
-        const details = await getWordDetails(word, currentBookFile);
-        const wordItem = document.createElement('div');
-        wordItem.className = 'word-card';
-        wordItem.innerHTML = `
-            <h3>${index + 1}. ${word}</h3>
-            <div class="word-pronounce">${details.pronounce}</div>
-            <div class="word-info"><label>释义：</label>${details.meaning}</div>
-        `;
-        resultList.appendChild(wordItem);
-    });
-
-    show('resultPage');
-}
-
-// 继续学习
-function continueStudy() {
-    goStudy(currentStudyMode);
-}
-
-// 显示攒钱进度
-function showOverview() {
-    updateOverviewData();
-    show('overviewPage');
-}
-
-// 更新概览数据
-function updateOverviewData() {
-    // 更新金额
-    const totalMoney = Object.keys(userData.learnedWords).length * MONEY_PER_WORD;
-    document.getElementById('totalMoneyText').textContent = `${totalMoney.toFixed(1)} 元`;
-    // 更新统计
-    document.getElementById('todayCountText').textContent = `${userData.todayWords} 词`;
-    document.getElementById('totalCountText').textContent = `${userData.totalWords} 词`;
-    // 更新连续学习天数
-    document.getElementById('streakText').textContent = `连续学习 ${userData.streakDays} 天`;
-    // 生成日历
-    generateCalendar();
-}
-
-// 生成日历
-function generateCalendar() {
-    const calendarGrid = document.getElementById('calendarGrid');
-    calendarGrid.innerHTML = '';
-
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-
-    // 填充月初空白
-    for (let i = 0; i < firstDayOfMonth; i++) {
-        const emptyDay = document.createElement('div');
-        emptyDay.className = 'calendar-day';
-        calendarGrid.appendChild(emptyDay);
-    }
-
-    // 填充日期
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayElement = document.createElement('div');
-        dayElement.className = 'calendar-day';
-        dayElement.textContent = day;
-
-        // 标记今日
-        if (day === today.getDate()) {
-            dayElement.classList.add('today');
+        function selectBook(file, name) {
+            G.book = file;
+            G.bookName = name;
+            document.getElementById("currentBookText").textContent = `当前：${name}`;
+            document.querySelectorAll(".book-btn").forEach(b => b.classList.remove("active"));
+            event.target.classList.add("active");
+            document.getElementById("btnStudyNew").disabled = false;
+            document.getElementById("btnStudyReview").disabled = false;
+            showToast(`已切换至 ${name} 单词本`);
         }
 
-        // 根据学习数量添加样式
-        const learnCount = userData.calendarData[dateStr] || 0;
-        if (learnCount > 0) {
-            if (learnCount >= 20) {
-                dayElement.classList.add('learned-30');
-            } else if (learnCount >= 10) {
-                dayElement.classList.add('learned-20');
+        function startStudy(mode) {
+            if (!G.book) { showToast("请先选单词本"); return; }
+            G.mode = mode;
+            G.idx = 0;
+            let bookKey = G.book.replace(".txt", "");
+            let list = G.words[bookKey];
+            if (!list || list.length === 0) { showToast("词库为空"); return; }
+
+            if (mode === "new") {
+                let un = list.filter(w => !G.user.learned[w]);
+                if (un.length === 0) { showToast("该词库已全部学完！"); return; }
+                G.batch = shuffle(un).slice(0, CONFIG.BATCH);
             } else {
-                dayElement.classList.add('learned-10');
+                let rev = Object.keys(G.user.learned).filter(w => {
+                    let d = G.user.learned[w];
+                    return dayDiff(d.last, today()) >= CONFIG.REVIEW[Math.min(d.rev, CONFIG.REVIEW.length - 1)];
+                });
+                if (rev.length === 0) { showToast("暂无需要复习的单词"); return; }
+                G.batch = shuffle(rev).slice(0, CONFIG.BATCH);
             }
-            // 添加提示
-            dayElement.title = `${dateStr} 学习了 ${learnCount} 个单词`;
+            showOne();
+            switchPage("studyPage");
         }
 
-        calendarGrid.appendChild(dayElement);
-    }
-}
+        async function showOne() {
+            if (G.idx >= G.batch.length) { finishStudy(); return; }
+            let w = G.batch[G.idx];
+            let d = await getDetail(w);
+            document.getElementById("showWord").textContent = w;
+            document.getElementById("p").textContent = d.reading;
+            document.getElementById("m").textContent = d.meaning;
+            document.getElementById("e").textContent = d.example;
+            document.getElementById("c").textContent = d.collocation;
+            document.getElementById("studyProgress").style.width = (G.idx / G.batch.length * 100) + "%";
+        }
 
-// 更新连续学习天数
-function updateStreakDays() {
-    const today = getTodayDate();
-    const yesterday = getYesterdayDate();
-
-    if (userData.lastStudyDate === today) {
-        // 今天已经学习过了
-        return;
-    } else if (userData.lastStudyDate === yesterday) {
-        // 连续学习
-        userData.streakDays++;
-    } else if (userData.lastStudyDate === '') {
-        // 第一次学习
-        userData.streakDays = 1;
-    } else {
-        // 断签了
-        userData.streakDays = 1;
-    }
-
-    userData.lastStudyDate = today;
-}
-
-// 更新日历数据
-function updateCalendarData() {
-    const today = getTodayDate();
-    userData.calendarData[today] = (userData.calendarData[today] || 0) + 1;
-}
-
-// 更新标语
-function updateSlogan() {
-    const slogans = [
-        '今日目标：背完10个单词',
-        '坚持就是胜利！',
-        '单词背得越多，钱包越鼓 🤑',
-        '每天进步一点点',
-        '学习使我富有 ✨'
-    ];
-    const randomSlogan = slogans[Math.floor(Math.random() * slogans.length)];
-    document.getElementById('slogan').textContent = randomSlogan;
-}
-
-// 重置数据（保留功能）
-function resetData() {
-    if (confirm('确定要重置所有学习数据吗？此操作不可恢复！')) {
-        userData = {
-            learnedWords: {},
-            totalWords: 0,
-            todayWords: 0,
-            streakDays: 0,
-            lastStudyDate: '',
-            calendarData: {}
-        };
-        saveUserData();
-        updateOverviewData();
-        showToast('数据已重置');
-    }
-}
-
-// 显示提示框
-function showToast(message) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.add('show');
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 2000);
-}
-
-// 保存用户数据到本地存储
-function saveUserData() {
-    localStorage.setItem('japaneseWordStudyData', JSON.stringify(userData));
-}
-
-// 加载本地存储的用户数据
-function loadUserData() {
-    const savedData = localStorage.getItem('japaneseWordStudyData');
-    if (savedData) {
-        userData = JSON.parse(savedData);
-        // 兼容旧数据结构
-        userData.calendarData = userData.calendarData || {};
-        userData.streakDays = userData.streakDays || 0;
-        // 为旧数据补充book字段
-        Object.keys(userData.learnedWords).forEach(word => {
-            if (!userData.learnedWords[word].book) {
-                userData.learnedWords[word].book = bookConfig.currentBookFile || '';
+        function next(ok) {
+            let w = G.batch[G.idx];
+            if (!G.user.learned[w]) {
+                G.user.learned[w] = { rev: 0, last: today(), cnt: 1 };
+                G.user.total++;
+                G.user.today++;
+            } else {
+                let d = G.user.learned[w];
+                d.cnt++;
+                d.last = today();
+                d.rev = ok ? Math.min(d.rev + 1, CONFIG.REVIEW.length - 1) : 0;
             }
-        });
-    }
-    
-    // 重置今日学习数（如果不是当天）
-    if (userData.lastStudyDate !== getTodayDate()) {
-        userData.todayWords = 0;
-    }
-}
+            save();
+            G.idx++;
+            showOne();
+        }
 
-// 工具函数：获取今日日期 YYYY-MM-DD
-function getTodayDate() {
-    const date = new Date();
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
+        function finishStudy() {
+            G.spell = [...G.batch];
+            G.sidx = 0;
+            showSpellOne();
+            switchPage("spellPage");
+            showToast("学习完成！开始拼写练习");
+        }
 
-// 工具函数：获取昨天日期 YYYY-MM-DD
-function getYesterdayDate() {
-    const date = new Date();
-    date.setDate(date.getDate() - 1);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
+        async function getDetail(word) {
+            if (G.cache[word]) return G.cache[word];
+            try {
+                let r = await fetch("https://api.jisho.org/v1/search/words?keyword=" + encodeURIComponent(word));
+                let j = await r.json();
+                if (!j.data || j.data.length === 0) throw new Error("无结果");
+                let d = j.data[0];
+                let reading = d.japanese?.[0]?.reading || "暂无发音";
+                let meaning = d.senses?.[0]?.english_definitions?.join("；") || "暂无释义";
+                let example = d.senses?.[0]?.examples?.[0]?.text || "暂无例句";
+                let collocation = d.senses?.[0]?.parts_of_speech?.join("；") || "暂无搭配";
+                let res = { word, reading, meaning, example, collocation };
+                G.cache[word] = res;
+                return res;
+            } catch (e) {
+                return { word, reading: "暂无发音", meaning: "暂无释义", example: "暂无例句", collocation: "暂无搭配" };
+            }
+        }
 
-// 工具函数：计算两个日期之间的天数差
-function getDaysBetween(date1, date2) {
-    if (!date1 || !date2) return 0;
-    const d1 = new Date(date1);
-    const d2 = new Date(date2);
-    const diffTime = Math.abs(d2 - d1);
-    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
-}
+        async function showSpellOne() {
+            if (G.sidx >= G.spell.length) {
+                showToast("拼写练习全部完成！");
+                switchPage("homePage");
+                return;
+            }
+            let w = G.spell[G.sidx];
+            let d = await getDetail(w);
+            document.getElementById("spellWordInfo").innerHTML = `
+                <strong>发音：</strong>${d.reading}<br>
+                <strong>释义：</strong>${d.meaning}
+            `;
+            document.getElementById("spellInput").value = "";
+            document.getElementById("spellInput").focus();
+            document.getElementById("spellProgress").style.width = (G.sidx / G.spell.length * 100) + "%";
+        }
 
-// 工具函数：随机获取指定数量的数组元素
-function getRandomItems(arr, count) {
-    const shuffled = [...arr].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
-}
-</script>
+        async function checkSpell() {
+            let input = document.getElementById("spellInput").value.trim();
+            if (!input) { showToast("请输入单词"); return; }
+            let w = G.spell[G.sidx];
+            let d = await getDetail(w);
+            let reading = d.reading.replace(/「|」/g, "");
+            let correct = (input === w || input === reading);
+            if (correct) {
+                showToast("✅ 正确！");
+                G.sidx++;
+                setTimeout(showSpellOne, 800);
+            } else {
+                showToast(`❌ 错误，正确答案：${w}（${reading}）`);
+                document.getElementById("spellInput").value = "";
+            }
+        }
+
+        function markKnown() {
+            let w = G.batch[G.idx];
+            if (G.user.learned[w]) {
+                G.user.learned[w].rev = Math.min(G.user.learned[w].rev + 2, CONFIG.REVIEW.length - 1);
+                save();
+                showToast("标记为熟悉，延长复习间隔");
+            }
+        }
+
+        function markUnknown() {
+            let w = G.batch[G.idx];
+            if (G.user.learned[w]) {
+                G.user.learned[w].rev = 0;
+                save();
+                showToast("标记为陌生，将尽快安排复习");
+            }
+        }
+
+        function save() {
+            localStorage.setItem("jpstudy", JSON.stringify(G.user));
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById("money").textContent = (G.user.total * CONFIG.MONEY).toFixed(1);
+            document.getElementById("total").textContent = G.user.total;
+            document.getElementById("today").textContent = G.user.today;
+            document.getElementById("streak").textContent = G.user.streak;
+        }
+
+        function resetData() {
+            if (confirm("确定要重置所有学习数据吗？此操作不可恢复！")) {
+                G.user = { learned: {}, total: 0, today: 0, streak: 0, last: "", cal: {} };
+                save();
+                showToast("数据已重置");
+            }
+        }
+
+        function switchPage(id) {
+            document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+            document.getElementById(id).classList.add("active");
+        }
+
+        function shuffle(a) { return [...a].sort(() => Math.random() - 0.5); }
+        function today() { let d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, 0) + "-" + String(d.getDate()).padStart(2, 0); }
+        function dayDiff(a, b) { if (!a || !b) return 999; return Math.floor((new Date(b) - new Date(a)) / 86400000); }
+        function showToast(m) { let t = document.getElementById("toast"); t.textContent = m; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
+    </script>
 </body>
 </html>
