@@ -1,375 +1,203 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>日语N5-N1单词背诵</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-    }
+import json
+import os
+from datetime import datetime, timedelta
 
-    body {
-      background: #f2f9f7;
-      min-height: 100vh;
-      padding: clamp(15px, 4vw, 30px);
-    }
+# ====================== 【核心配置】 ======================
+# 数据文件（自动保存，下次打开还在）
+DATA_FILE = "word_data.json"
+# 艾宾浩斯复习曲线（按天，不背单词同款）
+REVIEW_CURVE = [1, 2, 4, 7, 15, 30]
+# 每轮学习/复习单词数量
+BATCH_SIZE = 10
+# =========================================================
 
-    .container {
-      max-width: 700px;
-      margin: 0 auto;
-    }
-
-    .title {
-      text-align: center;
-      margin: 10px 0 20px;
-      color: #2d6b66;
-      font-size: clamp(22px, 5vw, 28px);
-    }
-    .subtitle {
-      text-align: center;
-      color: #5bbcad;
-      font-size: clamp(14px, 3vw, 16px);
-      margin-bottom: 20px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: clamp(20px, 5vw, 30px);
-      margin-bottom: 16px;
-      box-shadow: 0 2px 12px rgba(134, 230, 215, 0.15);
-    }
-
-    .level-select {
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid #cce8e1;
-      font-size: 16px;
-      margin-bottom: 12px;
-      background: #fff;
-    }
-
-    .stats {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .stat-item {
-      flex: 1;
-      background: #86e6d7;
-      color: #2d6b66;
-      text-align: center;
-      padding: 12px;
-      border-radius: 12px;
-      font-weight: bold;
-    }
-
-    .mode-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .tab {
-      flex: 1;
-      padding: 12px;
-      border-radius: 12px;
-      border: none;
-      background: #e6f7f4;
-      color: #2d6b66;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .tab.active {
-      background: #5bbcad;
-      color: white;
-    }
-
-    .word-card {
-      text-align: center;
-      padding: 30px 20px;
-    }
-    .kanji {
-      font-size: clamp(36px, 10vw, 50px);
-      color: #2d6b66;
-      margin-bottom: 8px;
-    }
-    .kana {
-      font-size: clamp(18px, 4vw, 22px);
-      color: #5bbcad;
-      margin-bottom: 10px;
-    }
-    .meaning {
-      font-size: clamp(16px, 3.5vw, 18px);
-      color: #333;
-      margin: 10px 0 20px;
-    }
-    .grammar {
-      font-size: 14px;
-      color: #777;
-      margin-bottom: 10px;
-    }
-    .example {
-      background: #f2f9f7;
-      padding: 12px;
-      border-radius: 10px;
-      margin: 12px 0;
-      font-size: 15px;
-      text-align: left;
-    }
-
-    .btn {
-      padding: 12px 16px;
-      border-radius: 12px;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      margin: 6px;
-      transition: 0.2s;
-    }
-    .btn:active { transform: scale(0.95); }
-    .btn-primary { background: #5bbcad; color: white; }
-    .btn-outline { background: white; border:1px solid #5bbcad; color:#2d6b66; }
-
-    .spell-input {
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
-      border:1px solid #cce8e1;
-      font-size:16px;
-      margin:12px 0;
-      text-align:center;
-    }
-    .correct { color: #2da66b; font-weight:bold; }
-    .wrong { color: #e63946; font-weight:bold; }
-
-    .loading {
-      position: fixed; top:0; left:0; width:100%; height:100%;
-      background:#f2f9f7; display:flex; align-items:center; justify-content:center;
-      flex-direction:column; z-index:999;
-    }
-    .loader {
-      width:40px; height:40px; border:4px solid #cce8e1;
-      border-top:4px solid #5bbcad; border-radius:50%;
-      animation:spin 1s linear infinite; margin-bottom:16px;
-    }
-    @keyframes spin { 100% { transform:rotate(360deg); } }
-
-    .modal {
-      position:fixed; top:0; left:0; width:100%; height:100%;
-      background:#00000066; display:none; align-items:center; justify-content:center;
-      z-index:99;
-    }
-    .modal-content {
-      background:white; padding:30px; border-radius:20px; text-align:center;
-      animation:pop 0.4s ease;
-    }
-    @keyframes pop {
-      0%{transform:scale(0.8);opacity:0;}
-      100%{transform:scale(1);opacity:1;}
-    }
-  </style>
-</head>
-
-<body>
-  <div class="loading" id="loading">
-    <div class="loader"></div>
-    <div>加载单词库中...</div>
-  </div>
-
-  <div class="container">
-    <div class="title">日语 N5-N1 单词背诵</div>
-    <div class="subtitle">智能复习・永久记忆・无需API密钥</div>
-
-    <div class="card">
-      <select class="level-select" id="levelSelector">
-        <option value="n5">N5 初级</option>
-        <option value="n4">N4 基础</option>
-        <option value="n3">N3 中级</option>
-        <option value="n2">N2 高阶</option>
-        <option value="n1">N1 精通</option>
-      </select>
-
-      <div class="stats">
-        <div class="stat-item">总<br><span id="total">0</span></div>
-        <div class="stat-item">已掌握<br><span id="mastered">0</span></div>
-        <div class="stat-item">剩余<br><span id="remaining">0</span></div>
-      </div>
-
-      <div class="mode-tabs">
-        <button class="tab active" data-mode="view">单词背诵</button>
-        <button class="tab" data-mode="spell">拼写练习</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="word-card">
-        <div class="kanji" id="kanji">勉強</div>
-        <div class="kana" id="kana">べんきょう</div>
-        <div class="grammar" id="grammar">名词・三类动词</div>
-        <div class="meaning" id="meaning">学习</div>
-
-        <div class="example" id="example">
-          毎日勉強します<br>
-          <span style="color:#777">我每天学习</span>
-        </div>
-
-        <button class="btn btn-primary" onclick="playWord()">🔊 发音</button>
-
-        <div id="spellArea" style="display:none; margin-top:20px;">
-          <input class="spell-input" id="userInput" placeholder="请输入假名">
-          <div id="spellResult"></div>
-          <button class="btn btn-primary" onclick="checkSpell()">检查</button>
-          <button class="btn btn-outline" onclick="nextWord()">下一个</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div style="text-align:center;">
-        <button class="btn btn-outline" onclick="mark(0)">忘记了</button>
-        <button class="btn btn-outline" onclick="mark(1)">模糊</button>
-        <button class="btn btn-primary" onclick="mark(2)">认识</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <h2>恭喜 🎉</h2>
-      <p id="modalText">你掌握了新单词！</p>
-    </div>
-  </div>
-
-  <script>
-    let currentLevel = "n5";
-    let allWords = [];
-    let currentWords = [];
-    let currentIndex = 0;
-    let mastered = JSON.parse(localStorage.getItem("jp_mastered")) || [];
-
-    window.onload = async () => {
-      await loadWords();
-      initLevel();
-      setTimeout(() => {
-        document.getElementById("loading").style.display = "none";
-      }, 600);
-
-      document.getElementById("levelSelector").addEventListener("change", async (e) => {
-        currentLevel = e.target.value;
-        await loadWords();
-        initLevel();
-      });
-
-      document.querySelectorAll(".tab").forEach(tab => {
-        tab.addEventListener("click", () => {
-          document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-          tab.classList.add("active");
-          document.getElementById("spellArea").style.display = tab.dataset.mode === "spell" ? "block" : "none";
-        });
-      });
-    };
-
-    // ✅ 读取外部 TXT 单词文件（核心功能）
-    async function loadWords() {
-      try {
-        const res = await fetch(`./${currentLevel}.txt`);
-        const text = await res.text();
-        allWords = text.split("\n").map(w => w.trim()).filter(w => w);
-      } catch (e) {
-        allWords = ["勉強", "学校", "先生", "学生"];
-      }
-    }
-
-    function initLevel() {
-      currentWords = allWords.filter(w => !mastered.includes(w));
-      if (currentWords.length === 0) currentWords = [...allWords];
-      currentIndex = 0;
-      loadWordData();
-      updateStats();
-    }
-
-    async function loadWordData() {
-      const word = currentWords[currentIndex];
-      document.getElementById("kanji").innerText = word;
-      document.getElementById("kana").innerText = "読み込み...";
-      document.getElementById("meaning").innerText = "読み込み...";
-      document.getElementById("grammar").innerText = "";
-
-      try {
-        const res = await fetch(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(word)}`);
-        const data = await res.json();
-        if (data.data.length > 0) {
-          const item = data.data[0];
-          const kana = item.japanese[0]?.reading || word;
-          const mean = item.senses[0]?.english_definitions?.join(", ") || "意味なし";
-          const pos = item.senses[0]?.parts_of_speech?.join("・") || "词汇";
-          document.getElementById("kana").innerText = kana;
-          document.getElementById("meaning").innerText = mean;
-          document.getElementById("grammar").innerText = pos;
-        } else {
-          document.getElementById("kana").innerText = "読み方なし";
-          document.getElementById("meaning").innerText = "意味なし";
+# ====================== 【数据加载/保存】 ======================
+def load_data():
+    if not os.path.exists(DATA_FILE):
+        return {
+            "words": [],
+            "study_record": {},
+            "today": str(datetime.now().date()),
+            "continuous_days": 0,
+            "total_money": 0.0
         }
-      } catch (e) {
-        document.getElementById("kana").innerText = "べんきょう";
-        document.getElementById("meaning").innerText = "学习";
-      }
-    }
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
 
-    function nextWord() {
-      currentIndex = (currentIndex + 1) % currentWords.length;
-      loadWordData();
-      document.getElementById("userInput").value = "";
-      document.getElementById("spellResult").innerText = "";
-    }
+def save_data(data):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
-    function playWord() {
-      const ut = new SpeechSynthesisUtterance(document.getElementById("kanji").innerText);
-      ut.lang = "ja-JP";
-      speechSynthesis.speak(ut);
-    }
+# 自动更新日期（今天进是今天，明天进是明天）
+def update_date(data):
+    today = str(datetime.now().date())
+    if data["today"] != today:
+        data["today"] = today
+        # 连续学习天数自动计算
+        yesterday = str((datetime.now() - timedelta(days=1)).date())
+        if yesterday in data["study_record"]:
+            data["continuous_days"] += 1
+        else:
+            data["continuous_days"] = 1
+    save_data(data)
 
-    function checkSpell() {
-      const input = document.getElementById("userInput").value.trim();
-      const ans = document.getElementById("kana").innerText;
-      const res = document.getElementById("spellResult");
-      if (input === ans) {
-        res.innerText = "✅ 正确！";
-        res.className = "correct";
-        setTimeout(nextWord, 1000);
-      } else {
-        res.innerText = "❌ 错误";
-        res.className = "wrong";
-      }
-    }
+# ====================== 【单词核心功能】 ======================
+# 初始化单词库（N5示例）
+def init_words(data):
+    if not data["words"]:
+        default_words = [
+            {"word": "私", "kana": "わたし", "sound": "watashi", "example": "私は学生です", "collocation": "私たち", "status": "new", "review_count": 0, "next_review": "", "add_time": str(datetime.now().date())},
+            {"word": "本", "kana": "ほん", "sound": "hon", "example": "本を買う", "collocation": "本屋", "status": "new", "review_count": 0, "next_review": "", "add_time": str(datetime.now().date())},
+            {"word": "学校", "kana": "がっこう", "sound": "gakkou", "example": "学校へ行く", "collocation": "学校生活", "status": "new", "review_count": 0, "next_review": "", "add_time": str(datetime.now().date())}
+        ]
+        data["words"] = default_words * 4  # 凑够足够数量
+        save_data(data)
 
-    function mark(type) {
-      if (type === 2) {
-        const word = currentWords[currentIndex];
-        if (!mastered.includes(word)) {
-          mastered.push(word);
-          localStorage.setItem("jp_mastered", JSON.stringify(mastered));
-          showModal();
-        }
-      }
-      initLevel();
-    }
+# 获取今日需要学习/复习的单词
+def get_today_words(data, mode="review"):
+    today = str(datetime.now().date())
+    result = []
+    for w in data["words"]:
+        if mode == "new" and w["status"] == "new":
+            result.append(w)
+        if mode == "review" and w["next_review"] == today:
+            result.append(w)
+    return result[:BATCH_SIZE]
 
-    function updateStats() {
-      document.getElementById("total").innerText = allWords.length;
-      document.getElementById("mastered").innerText = mastered.length;
-      document.getElementById("remaining").innerText = currentWords.length;
-    }
+# 更新复习计划
+def update_review(word, is_forget=False):
+    if is_forget:
+        word["status"] = "new"
+        word["review_count"] = 0
+        word["next_review"] = ""
+        return
+    word["review_count"] += 1
+    if word["review_count"] >= len(REVIEW_CURVE):
+        word["status"] "mastered"
+        word["next_review"] = ""
+    else:
+        days = REVIEW_CURVE[word["review_count"]-1]
+        next_day = str((datetime.now() + timedelta(days=days)).date())
+        word["next_review"] = next_day
+        word["status"] = "studying"
 
-    function showModal() {
-      document.getElementById("modal").style.display = "flex";
-      setTimeout(() => document.getElementById("modal").style.display = "none", 3000);
-    }
-  </script>
-</body>
-</html>
+# ====================== 【页面1：首页】 ======================
+def home_page(data):
+    update_date(data)
+    while True:
+        print("\n" + "="*30)
+        print("         🏠 首页")
+        print("="*30)
+        print("1. 📖 学习新单词")
+        print("2. 🔁 复习已学单词")
+        print("3. 📊 学习进程概览")
+        print("0. 🚪 退出")
+        choice = input("请选择：")
+        if choice == "1":
+            study_page(data, "new")
+        elif choice == "2":
+            study_page(data, "review")
+        elif choice == "3":
+            overview_page(data)
+        elif choice == "0":
+            print("再见！")
+            break
+
+# ====================== 【页面2：学习/复习页面】 ======================
+def study_page(data, mode):
+    today = str(datetime.now().date())
+    words = get_today_words(data, mode)
+    if not words:
+        print("✅ 今日无任务！")
+        return
+    
+    learned = 0
+    for word in words:
+        print("\n" + "-"*40)
+        print(f"单词：{word['word']}")
+        print(f"假名：{word['kana']}")
+        print(f"发音：{word['sound']}")
+        print(f"例句：{word['example']}")
+        print(f"搭配：{word['collocation']}")
+        print(f"复习次数：{word['review_count']}")
+        if word['next_review']:
+            print(f"下次复习：{word['next_review']}")
+        print("-"*40)
+        
+        # 记录学习
+        if today not in data["study_record"]:
+            data["study_record"][today] = {"count": 0, "time": 0}
+        data["study_record"][today]["count"] += 1
+        
+        while True:
+            opt = input("1. 下一个  2. 记错了：")
+            if opt == "1":
+                update_review(word, is_forget=False)
+                learned += 1
+                break
+            elif opt == "2":
+                update_review(word, is_forget=True)
+                break
+    
+    # 攒钱激励：每10个 = 1元
+    money = learned / 10
+    data["total_money"] += money
+    save_data(data)
+    
+    # 进入拼写/小结
+    spelling_page(data, words)
+
+# ====================== 【页面3：强化拼写 + 小结】 ======================
+def spelling_page(data, words):
+    print("\n🎯 学习完成！选择下一步：")
+    print("1. 强化拼写")
+    print("2. 小结（跳过）")
+    choice = input("请选择：")
+    
+    if choice == "1":
+        print("\n✍️ 开始强化拼写")
+        wrong_words = words.copy()
+        while wrong_words:
+            for w in wrong_words[:]:
+                ans = input(f"请拼写：{w['kana']} → ")
+                if ans == w["word"]:
+                    wrong_words.remove(w)
+                    print(f"✅ 正确！")
+                else:
+                    print(f"❌ 错误，重新来！")
+    
+    # 展示结果列表
+    print("\n📋 本次学习单词")
+    for w in words:
+        print(f"{w['word']} | 下次复习：{w['next_review'] or '已掌握'}")
+    input("\n按回车返回首页")
+
+# ====================== 【页面4：学习进程概览】 ======================
+def overview_page(data):
+    today = str(datetime.now().date())
+    today_data = data["study_record"].get(today, {"count": 0, "time": 0})
+    total_count = sum([v["count"] for v in data["study_record"].values()])
+    
+    print("\n" + "="*40)
+    print("          📊 学习进程概览")
+    print("="*40)
+    # 顶部
+    print(f"📚 当前学习：N5单词")
+    # 中部数据
+    print(f"\n📈 我的数据")
+    print(f"今日学习/复习：{today_data['count']} 词")
+    print(f"累计学习：{total_count} 词")
+    print(f"今日时长：{today_data['time']} 分钟")
+    print(f"累计时长：sum([v['time'] for v in data['study_record'].values()]) 分钟")
+    # 底部日历 + 激励
+    print(f"\n📅 学习日历（点击查看完整）")
+    print(f"❌未学 ✅10个 😊10-20个 👍≥20个")
+    print(f"\n🔥 连续学习：{data['continuous_days']} 天    💰 累计攒钱：{data['total_money']:.1f} 元")
+    input("\n按回车返回")
+
+# ====================== 【启动】 ======================
+if __name__ == "__main__":
+    data = load_data()
+    update_date(data)
+    init_words(data)
+    home_page(data)
