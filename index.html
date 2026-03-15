@@ -240,7 +240,7 @@
                 <div class="current-book" id="currentBookText">未选择单词本</div>
             </div>
             <button id="btnStudyNew" disabled onclick="startStudy('new')">📖 学习新单词</button>
-            <button id="btnStudyReview" disabled onclick="startStudy('review')">🔁 复习单词</button>
+            <button id="btnStudyReview" disabled onclick="startStudy('review')">🔁 艾宾浩斯复习</button>
             <button class="danger" onclick="switchPage('statsPage')">💰 攒钱进度</button>
         </div>
     </div>
@@ -260,8 +260,8 @@
                 <div class="info-item"><span class="label">释义：</span><span id="m">-</span></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <button onclick="markKnown()">✅ 熟</button>
-                <button class="danger" onclick="markUnknown()">❌ 生</button>
+                <button onclick="markKnown()">✅ 熟（已掌握）</button>
+                <button class="danger" onclick="markUnknown()">❌ 生（需复习）</button>
             </div>
             <button onclick="nextWord(true)">记住了 ➜</button>
             <button class="outline" onclick="nextWord(false)">记错了 🔄</button>
@@ -359,9 +359,26 @@ let G = {
   studyBatch: [], currentIndex: 0
 };
 
+// 🔥 升级存储结构：支持艾宾浩斯复习（本地时间）
 let USER = JSON.parse(localStorage.getItem("jpStudy") || `{
   "learned":{}, "total":0, "today":0, "streak":0, "last":"", "cal":{}
 }`);
+
+// ==========================
+// 工具：获取今日日期（本地时间）
+// ==========================
+function getToday() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// ==========================
+// 工具：计算N天后的日期
+// ==========================
+function getFutureDate(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
 
 // ==========================
 // 加载JSON词库
@@ -403,7 +420,7 @@ function selectBook(bk, name) {
 }
 
 // ==========================
-// 🔥 核心修复：区分 学习新词 / 复习单词
+// 🔥 核心：艾宾浩斯复习逻辑 + 修复复习BUG
 // ==========================
 function startStudy(mode) {
   const fullList = WORD_BANK[G.currentBook];
@@ -413,6 +430,7 @@ function startStudy(mode) {
   }
 
   let targetList = [];
+  const today = getToday();
 
   // 1. 学习新单词：从未学习过的单词
   if (mode === 'new') {
@@ -423,11 +441,15 @@ function startStudy(mode) {
     }
   }
 
-  // 2. 复习单词：学过但标记为需复习（0）的单词
+  // 2. 艾宾浩斯复习：今天到期需要复习的单词
   if (mode === 'review') {
-    targetList = fullList.filter(item => USER.learned[item.word] === 0);
+    targetList = fullList.filter(item => {
+      const wordData = USER.learned[item.word];
+      return wordData && wordData.nextReview <= today;
+    });
+    
     if (targetList.length === 0) {
-      showToast("✅ 暂无需要复习的单词！");
+      showToast("✅ 今日暂无需要复习的单词！");
       return;
     }
   }
@@ -449,32 +471,68 @@ function renderWord() {
 }
 
 // ==========================
-// 学习下一个单词
+// 🔥 核心：学习/复习 保存艾宾浩斯规则
 // ==========================
 function nextWord(ok) {
   const w = G.studyBatch[G.currentIndex].word;
-  
-  // 首次学习：存入学习记录
+  const today = getToday();
+
+  // 首次学习：初始化艾宾浩斯数据
   if (!USER.learned[w]) {
-    USER.learned[w] = ok ? 1 : 0;
+    USER.learned[w] = {
+      status: ok ? 1 : 0,
+      learnDate: today,
+      nextReview: getFutureDate(1), // 新单词：1天后复习
+      reviewCount: 0
+    };
     USER.total++;
     USER.today++;
-    const today = new Date().toISOString().split('T')[0];
     USER.cal[today] = (USER.cal[today] || 0) + 1;
-    save();
   } else {
-    // 复习：更新掌握状态
-    USER.learned[w] = ok ? 1 : 0;
-    save();
+    // 复习中：更新艾宾浩斯时间
+    const word = USER.learned[w];
+    word.status = ok ? 1 : 0;
+    
+    if (ok) {
+      // 答对：升级复习间隔
+      word.reviewCount++;
+      if (word.reviewCount === 1) word.nextReview = getFutureDate(3);
+      else if (word.reviewCount >= 2) word.nextReview = getFutureDate(7);
+    } else {
+      // 答错：重置为1天后复习
+      word.reviewCount = 0;
+      word.nextReview = getFutureDate(1);
+    }
   }
 
+  save();
   G.currentIndex++;
+
   if (G.currentIndex >= G.studyBatch.length) {
-    showToast("🎉 本组10个单词学习完成");
+    showToast("🎉 本组单词学习完成");
     switchPage("selectPage");
     return;
   }
   renderWord();
+}
+
+// ==========================
+// 标记掌握/未掌握（立即生效）
+// ==========================
+function markKnown() {
+  if(!currentItem) return;
+  const w = currentItem.word;
+  if(USER.learned[w]) USER.learned[w].status = 1;
+  save();
+  showToast("✅ 已掌握");
+}
+
+function markUnknown() {
+  if(!currentItem) return;
+  const w = currentItem.word;
+  if(USER.learned[w]) USER.learned[w].status = 0;
+  save();
+  showToast("🔄 需复习");
 }
 
 // ==========================
@@ -594,26 +652,12 @@ function updateUI() {
   document.getElementById("streak").textContent = USER.streak;
 }
 
-// 标记已掌握
-function markKnown() {
-  USER.learned[currentItem.word] = 1; 
-  save(); 
-  showToast("✅ 已掌握");
-}
-
-// 标记未掌握
-function markUnknown() {
-  USER.learned[currentItem.word] = 0; 
-  save(); 
-  showToast("🔄 需复习");
-}
-
 // 重置数据
 function resetData() {
-  if (confirm("确定重置？")) {
+  if (confirm("确定重置？所有学习记录将清空！")) {
     USER = { learned: {}, total: 0, today: 0, streak: 0, last: "", cal: {} };
     save();
-    showToast("✅ 已重置");
+    showToast("✅ 数据已重置");
   }
 }
 
