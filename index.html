@@ -143,6 +143,30 @@
             border-radius: 8px;
         }
 
+        /* 拼写答案提示框（手机端优化） */
+        .spell-tip {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 15px 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .spell-tip.correct {
+            color: var(--primary);
+            background: #E8F5E9;
+            border: 2px solid var(--secondary);
+        }
+        .spell-tip.wrong {
+            color: var(--danger);
+            background: #FFEBEE;
+            border: 2px solid var(--danger);
+        }
+
         .toast {
             position: fixed;
             bottom: 30px;
@@ -244,7 +268,7 @@
         </div>
     </div>
 
-    <!-- 4. 选择页（新增：拼写复习/学习小结） -->
+    <!-- 4. 选择页 -->
     <div id="selectPage" class="page">
         <div class="card">
             <h2>🎉 本组学习完成</h2>
@@ -255,7 +279,7 @@
         </div>
     </div>
 
-    <!-- 5. 学习小结页（新增：展示本组10个单词） -->
+    <!-- 5. 学习小结页 -->
     <div id="summaryPage" class="page">
         <div class="card">
             <h2>📋 本组单词小结</h2>
@@ -265,7 +289,7 @@
         </div>
     </div>
 
-    <!-- 6. 拼写复习页（新增） -->
+    <!-- 6. 拼写复习页 -->
     <div id="spellReviewPage" class="page">
         <div class="card">
             <div class="study-header">
@@ -273,10 +297,14 @@
                 <h2>✍️ 拼写复习</h2>
             </div>
             <div class="progress-bar"><div class="progress-fill" id="spellProgress"></div></div>
-            <div class="spell-hint">请输入单词拼写（仅显示释义）</div>
+            <div class="spell-hint">请输入单词拼写（汉字/假名均可）</div>
             <div class="word-info">
                 <div class="info-item"><span class="label">释义：</span><span id="spellMeaning">-</span></div>
             </div>
+
+            <!-- 答案提示框 -->
+            <div class="spell-tip" id="spellTip">请输入答案</div>
+
             <input type="text" class="spell-input" id="spellInput" placeholder="请输入单词..." autocomplete="off">
             <button onclick="checkSpell()">✅ 提交答案</button>
             <button class="danger" onclick="switchPage('homePage')">🏠 直接返回首页</button>
@@ -316,14 +344,13 @@
 
 <script>
 // ==========================
-// 配置：本组改为10个单词
+// 基础配置
 // ==========================
 let japaneseVoice = null;
 let currentItem = null;
-const CONFIG = { BATCH_SIZE: 10, MONEY_PER_WORD: 0.1 }; // 核心修改：10个单词/组
+const CONFIG = { BATCH_SIZE: 10, MONEY_PER_WORD: 0.1 };
 const WORD_BANK = { n1:[], n2:[], n3:[], n4:[], n5:[] };
 
-// 拼写复习专用变量
 let spellIndex = 0;
 let spellBatch = [];
 
@@ -337,7 +364,7 @@ let USER = JSON.parse(localStorage.getItem("jpStudy") || `{
 }`);
 
 // ==========================
-// 加载 JSON 词库
+// 加载JSON词库
 // ==========================
 async function loadAllJson() {
   for (let i = 1; i <= 5; i++) {
@@ -345,7 +372,6 @@ async function loadAllJson() {
     try {
       const res = await fetch(`./${level}.json`);
       WORD_BANK[level] = await res.json();
-      console.log(`${level} 加载完成：${WORD_BANK[level].length} 词`);
     } catch (e) {
       WORD_BANK[level] = [];
     }
@@ -377,15 +403,37 @@ function selectBook(bk, name) {
 }
 
 // ==========================
-// 开始学习
+// 🔥 核心修复：区分 学习新词 / 复习单词
 // ==========================
 function startStudy(mode) {
-  const list = WORD_BANK[G.currentBook];
-  if (!list || list.length < 1) {
+  const fullList = WORD_BANK[G.currentBook];
+  if (!fullList || fullList.length < 1) {
     showToast("❌ 单词库为空");
     return;
   }
-  G.studyBatch = list.sort(() => Math.random() - 0.5).slice(0, CONFIG.BATCH_SIZE);
+
+  let targetList = [];
+
+  // 1. 学习新单词：从未学习过的单词
+  if (mode === 'new') {
+    targetList = fullList.filter(item => !USER.learned[item.word]);
+    if (targetList.length === 0) {
+      showToast("🎉 当前单词本已全部学完！");
+      return;
+    }
+  }
+
+  // 2. 复习单词：学过但标记为需复习（0）的单词
+  if (mode === 'review') {
+    targetList = fullList.filter(item => USER.learned[item.word] === 0);
+    if (targetList.length === 0) {
+      showToast("✅ 暂无需要复习的单词！");
+      return;
+    }
+  }
+
+  // 随机取10个单词
+  G.studyBatch = targetList.sort(() => Math.random() - 0.5).slice(0, CONFIG.BATCH_SIZE);
   G.currentIndex = 0;
   renderWord();
   switchPage("studyPage");
@@ -401,10 +449,12 @@ function renderWord() {
 }
 
 // ==========================
-// 核心修改：学习完成后跳转到选择页
+// 学习下一个单词
 // ==========================
 function nextWord(ok) {
   const w = G.studyBatch[G.currentIndex].word;
+  
+  // 首次学习：存入学习记录
   if (!USER.learned[w]) {
     USER.learned[w] = ok ? 1 : 0;
     USER.total++;
@@ -412,18 +462,23 @@ function nextWord(ok) {
     const today = new Date().toISOString().split('T')[0];
     USER.cal[today] = (USER.cal[today] || 0) + 1;
     save();
+  } else {
+    // 复习：更新掌握状态
+    USER.learned[w] = ok ? 1 : 0;
+    save();
   }
+
   G.currentIndex++;
   if (G.currentIndex >= G.studyBatch.length) {
     showToast("🎉 本组10个单词学习完成");
-    switchPage("selectPage"); // 跳转到选择页，而非直接返回首页
+    switchPage("selectPage");
     return;
   }
   renderWord();
 }
 
 // ==========================
-// 新增：学习小结 - 渲染本组10个单词列表
+// 学习小结
 // ==========================
 function goToSummary() {
   const list = document.getElementById("summaryList");
@@ -441,7 +496,7 @@ function goToSummary() {
 }
 
 // ==========================
-// 新增：拼写复习逻辑
+// 拼写复习
 // ==========================
 function goToSpellReview() {
   spellBatch = [...G.studyBatch];
@@ -455,32 +510,42 @@ function renderSpellWord() {
   currentItem = item;
   document.getElementById("spellMeaning").textContent = item.meaning;
   document.getElementById("spellInput").value = "";
+  document.getElementById("spellTip").className = "spell-tip";
+  document.getElementById("spellTip").textContent = "请输入答案";
   document.getElementById("spellInput").focus();
   document.getElementById("spellProgress").style.width = (spellIndex / spellBatch.length * 100) + "%";
 }
 
+// 拼写检查（汉字/假名均可）
 function checkSpell() {
   const input = document.getElementById("spellInput").value.trim();
-  const correct = spellBatch[spellIndex].word;
-  
-  if (input === correct) {
-    showToast("✅ 拼写正确！");
+  const item = spellBatch[spellIndex];
+  const correctWord = item.word;
+  const correctReading = item.reading;
+  const tipEl = document.getElementById("spellTip");
+
+  if (input === correctWord || input === correctReading) {
+    tipEl.className = "spell-tip correct";
+    tipEl.innerHTML = "✅ 回答正确！";
     spellIndex++;
-    if (spellIndex >= spellBatch.length) {
-      showToast("🎉 拼写复习全部完成！");
-      switchPage("selectPage");
-      return;
-    }
-    renderSpellWord();
+    setTimeout(() => {
+      if (spellIndex >= spellBatch.length) {
+        showToast("🎉 拼写复习全部完成！");
+        switchPage("selectPage");
+        return;
+      }
+      renderSpellWord();
+    }, 800);
   } else {
-    showToast(`❌ 错误，正确答案：${correct}`);
+    tipEl.className = "spell-tip wrong";
+    tipEl.innerHTML = `❌ 错误<br>正确：${correctWord}（${correctReading}）`;
     document.getElementById("spellInput").value = "";
     document.getElementById("spellInput").focus();
   }
 }
 
 // ==========================
-// 真实日历
+// 学习日历
 // ==========================
 function initStudyCalendar() {
   const cal = document.getElementById("studyCalendar");
@@ -529,12 +594,21 @@ function updateUI() {
   document.getElementById("streak").textContent = USER.streak;
 }
 
+// 标记已掌握
 function markKnown() {
-  USER.learned[currentItem.word] = 1; save(); showToast("✅ 已掌握");
+  USER.learned[currentItem.word] = 1; 
+  save(); 
+  showToast("✅ 已掌握");
 }
+
+// 标记未掌握
 function markUnknown() {
-  USER.learned[currentItem.word] = 0; save(); showToast("🔄 需复习");
+  USER.learned[currentItem.word] = 0; 
+  save(); 
+  showToast("🔄 需复习");
 }
+
+// 重置数据
 function resetData() {
   if (confirm("确定重置？")) {
     USER = { learned: {}, total: 0, today: 0, streak: 0, last: "", cal: {} };
@@ -543,11 +617,13 @@ function resetData() {
   }
 }
 
+// 页面切换
 function switchPage(id) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 }
 
+// 提示框
 function showToast(m) {
   const t = document.getElementById("toast");
   t.textContent = m;
@@ -556,7 +632,7 @@ function showToast(m) {
 }
 
 // ==========================
-// 发音
+// 日语发音
 // ==========================
 function loadVoices() {
   const voices = speechSynthesis.getVoices();
