@@ -81,6 +81,13 @@
         .stat-val { font-size: 20px; font-weight: bold; color: var(--primary); }
         .stat-lbl { font-size: 12px; color: #888; }
 
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+        .cal-day { aspect-ratio: 1; border-radius: 4px; background: #eef2ef; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+        .cal-active-1 { background: #c8e6c9; }
+        .cal-active-2 { background: #81c784; }
+        .cal-active-3 { background: #4caf50; color: white; }
+        .cal-today { border: 2px solid var(--primary); }
+
         .loading, .error { text-align: center; padding: 20px; font-size: 16px; }
         .error { color: var(--danger); }
         .hidden { display: none !important; }
@@ -166,18 +173,18 @@
                 <div class="progress-bar"><div class="progress-fill" id="studyProgress"></div></div>
                 <div class="word-display" id="showWord"></div>
                 <div class="word-info">
-                    <div class="info-item"><span class="label">发音：</span><span id="p">-</span></div>
-                    <div class="info-item"><span class="label">释义：</span><span id="m">-</span></div>
-                    <div class="info-item"><span class="label">例句：</span><span id="e">-</span></div>
-                    <div class="info-item"><span class="label">搭配：</span><span id="c">-</span></div>
+                    <div class="info-item"><span class="label">发音：</span><span id="p"></span></div>
+                    <div class="info-item"><span class="label">释义：</span><span id="m"></span></div>
+                    <div class="info-item"><span class="label">例句：</span><span id="e"></span></div>
+                    <div class="info-item"><span class="label">搭配：</span><span id="c"></span></div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                     <button onclick="markKnown()">✅ 熟</button>
                     <button class="danger" onclick="markUnknown()">❌ 生</button>
                 </div>
-                <button onclick="nextWord(true)">记住了 ➜</button>
-                <button class="outline" onclick="nextWord(false)">记错了 🔄</button>
-                <button class="outline" onclick="switchPage('homePage')">放弃学习 ↩️</button>
+                <button onclick="next(true)">记住了 ➜</button>
+                <button class="outline" onclick="next(false)">记错了 🔄</button>
+                <button class="outline" onclick="switchPage('homePage')">返回首页</button>
             </div>
         </div>
 
@@ -191,7 +198,7 @@
                 </div>
                 <input class="spell-input" id="spellInput" placeholder="输入单词（汉字/假名）">
                 <button onclick="checkSpell()">提交答案</button>
-                <button class="outline" onclick="switchPage('homePage')">完成练习 ↩️</button>
+                <button class="outline" onclick="switchPage('homePage')">完成</button>
             </div>
         </div>
 
@@ -204,8 +211,8 @@
                     <div class="stat-box"><div class="stat-val" id="today">0</div><div class="stat-lbl">今日学习</div></div>
                     <div class="stat-box"><div class="stat-val" id="streak">0</div><div class="stat-lbl">连续天数</div></div>
                 </div>
-                <button onclick="switchPage('homePage')">返回首页</button>
-                <button class="danger" onclick="resetData()">⚠️ 重置所有数据</button>
+                <button onclick="switchPage('homePage')">返回</button>
+                <button class="danger" onclick="resetData()">重置数据</button>
             </div>
         </div>
     </div>
@@ -213,39 +220,40 @@
 
     <script>
         const CONFIG = {
-            BATCH_SIZE: 10,
-            MONEY_PER_WORD: 0.1,
-            REVIEW_CURVE: [1, 2, 4, 7, 15, 30]
+            BATCH: 10,
+            MONEY: 0.1,
+            REVIEW: [1, 2, 4, 7, 15, 30]
         };
 
         let G = {
-            currentBookFile: "",
-            currentBookName: "",
-            bookWords: { n1: [], n2: [], n3: [], n4: [], n5: [] },
-            wordCache: {},
-            userData: JSON.parse(localStorage.getItem("jpWordStudy") || '{"learned":{},"total":0,"today":0,"streak":0,"lastDate":"","calendar":{}}'),
-            studyMode: "",
-            studyBatch: [],
-            currentWordIndex: 0,
-            spellWords: [],
-            currentSpellIndex: 0
+            book: "",
+            bookName: "",
+            words: { n1: [], n2: [], n3: [], n4: [], n5: [] },
+            cache: {}, // { word: { word, reading, meaning, example, collocation } }
+            user: JSON.parse(localStorage.getItem("jpstudy") || '{"learned":{},"total":0,"today":0,"streak":0,"last":"","cal":{}}'),
+            mode: "",
+            batch: [],
+            idx: 0,
+            spell: [],
+            sidx: 0
         };
 
-        document.addEventListener('DOMContentLoaded', async () => {
+        init();
+
+        async function init() {
             await loadAllBooks();
             switchPage("homePage");
-            updateStatsUI();
-            document.getElementById("loadingPage").classList.remove("active");
-        });
+            updateUI();
+        }
 
         async function loadAllBooks() {
             try {
                 for (let i = 1; i <= 5; i++) {
-                    const fileName = `n${i}.txt`;
-                    const resp = await fetch(fileName);
-                    if (!resp.ok) continue;
-                    const text = await resp.text();
-                    G.bookWords[`n${i}`] = text.split("\n").map(w => w.trim()).filter(w => w);
+                    let f = `n${i}.txt`;
+                    let r = await fetch(f);
+                    if (!r.ok) continue;
+                    let t = await r.text();
+                    G.words[`n${i}`] = t.split("\n").map(x => x.trim()).filter(x => x);
                 }
             } catch (e) {
                 console.error("加载词库失败", e);
@@ -253,183 +261,177 @@
         }
 
         function selectBook(file, name) {
-            G.currentBookFile = file;
-            G.currentBookName = name;
+            G.book = file;
+            G.bookName = name;
             document.getElementById("currentBookText").textContent = `当前：${name}`;
             document.querySelectorAll(".book-btn").forEach(b => b.classList.remove("active"));
             event.target.classList.add("active");
             document.getElementById("btnStudyNew").disabled = false;
             document.getElementById("btnStudyReview").disabled = false;
-            showToast(`✅ 已切换至 ${name}`);
+            showToast(`已切换至 ${name} 单词本`);
         }
 
         function startStudy(mode) {
-            if (!G.currentBookFile) { showToast("请先选择单词本"); return; }
-            G.studyMode = mode;
-            G.currentWordIndex = 0;
-            const bookKey = G.currentBookFile.replace(".txt", "");
-            const wordList = G.bookWords[bookKey];
-            if (!wordList || wordList.length === 0) { showToast("词库为空"); return; }
+            if (!G.book) { showToast("请先选单词本"); return; }
+            G.mode = mode;
+            G.idx = 0;
+            let bookKey = G.book.replace(".txt", "");
+            let list = G.words[bookKey];
+            if (!list || list.length === 0) { showToast("词库为空"); return; }
 
             if (mode === "new") {
-                const newWords = wordList.filter(w => !G.userData.learned[w]);
-                if (newWords.length === 0) { showToast("🎉 该词库已全部学完！"); return; }
-                G.studyBatch = shuffleArray(newWords).slice(0, CONFIG.BATCH_SIZE);
-                document.getElementById("studyTitle").textContent = `📖 学习新单词（${G.currentBookName}）`;
+                let un = list.filter(w => !G.user.learned[w]);
+                if (un.length === 0) { showToast("该词库已全部学完！"); return; }
+                G.batch = shuffle(un).slice(0, CONFIG.BATCH);
             } else {
-                const reviewWords = Object.keys(G.userData.learned).filter(w => {
-                    const d = G.userData.learned[w];
-                    return dayDiff(d.lastReview, getToday()) >= CONFIG.REVIEW_CURVE[Math.min(d.reviewDays, CONFIG.REVIEW_CURVE.length - 1)];
+                let rev = Object.keys(G.user.learned).filter(w => {
+                    let d = G.user.learned[w];
+                    return dayDiff(d.last, today()) >= CONFIG.REVIEW[Math.min(d.rev, CONFIG.REVIEW.length - 1)];
                 });
-                if (reviewWords.length === 0) { showToast("✅ 暂无需要复习的单词"); return; }
-                G.studyBatch = shuffleArray(reviewWords).slice(0, CONFIG.BATCH_SIZE);
-                document.getElementById("studyTitle").textContent = `🔁 复习单词（${G.currentBookName}）`;
+                if (rev.length === 0) { showToast("暂无需要复习的单词"); return; }
+                G.batch = shuffle(rev).slice(0, CONFIG.BATCH);
             }
-            renderCurrentWord();
+            showOne();
             switchPage("studyPage");
         }
 
-        async function renderCurrentWord() {
-            if (G.currentWordIndex >= G.studyBatch.length) {
-                finishStudy();
-                return;
-            }
-            const word = G.studyBatch[G.currentWordIndex];
-            const details = await getWordDetails(word);
-            document.getElementById("showWord").textContent = word;
-            document.getElementById("p").textContent = details.reading;
-            document.getElementById("m").textContent = details.meaning;
-            document.getElementById("e").textContent = details.example;
-            document.getElementById("c").textContent = details.collocation;
-            document.getElementById("studyProgress").style.width = `${(G.currentWordIndex / G.studyBatch.length) * 100}%`;
+        async function showOne() {
+            if (G.idx >= G.batch.length) { finishStudy(); return; }
+            let w = G.batch[G.idx];
+            let d = await getDetail(w);
+            document.getElementById("showWord").textContent = w;
+            document.getElementById("p").textContent = d.reading;
+            document.getElementById("m").textContent = d.meaning;
+            document.getElementById("e").textContent = d.example;
+            document.getElementById("c").textContent = d.collocation;
+            document.getElementById("studyProgress").style.width = (G.idx / G.batch.length * 100) + "%";
         }
 
-        async function getWordDetails(word) {
-            if (G.wordCache[word]) return G.wordCache[word];
+        function next(ok) {
+            let w = G.batch[G.idx];
+            if (!G.user.learned[w]) {
+                G.user.learned[w] = { rev: 0, last: today(), cnt: 1 };
+                G.user.total++;
+                G.user.today++;
+            } else {
+                let d = G.user.learned[w];
+                d.cnt++;
+                d.last = today();
+                d.rev = ok ? Math.min(d.rev + 1, CONFIG.REVIEW.length - 1) : 0;
+            }
+            save();
+            G.idx++;
+            showOne();
+        }
+
+        function finishStudy() {
+            G.spell = [...G.batch];
+            G.sidx = 0;
+            showSpellOne();
+            switchPage("spellPage");
+            showToast("学习完成！开始拼写练习");
+        }
+
+        async function getDetail(word) {
+            if (G.cache[word]) return G.cache[word];
             try {
-                const resp = await fetch(`https://api.jisho.org/v1/search/words?keyword=${encodeURIComponent(word)}`);
-                const data = await resp.json();
-                if (!data.data || data.data.length === 0) throw new Error("无结果");
-                const item = data.data[0];
-                const reading = item.japanese?.[0]?.reading || "暂无发音";
-                const meaning = item.senses?.[0]?.english_definitions?.join("；") || "暂无释义";
-                const example = item.senses?.[0]?.examples?.[0]?.text || "暂无例句";
-                const collocation = item.senses?.[0]?.parts_of_speech?.join("；") || "暂无搭配";
-                const res = { word, reading, meaning, example, collocation };
-                G.wordCache[word] = res;
+                let r = await fetch("https://api.jisho.org/v1/search/words?keyword=" + encodeURIComponent(word));
+                let j = await r.json();
+                if (!j.data || j.data.length === 0) throw new Error("无结果");
+                let d = j.data[0];
+                let reading = d.japanese?.[0]?.reading || "暂无发音";
+                let meaning = d.senses?.[0]?.english_definitions?.join("；") || "暂无释义";
+                let example = d.senses?.[0]?.examples?.[0]?.text || "暂无例句";
+                let collocation = d.senses?.[0]?.parts_of_speech?.join("；") || "暂无搭配";
+                let res = { word, reading, meaning, example, collocation };
+                G.cache[word] = res;
                 return res;
             } catch (e) {
                 return { word, reading: "暂无发音", meaning: "暂无释义", example: "暂无例句", collocation: "暂无搭配" };
             }
         }
 
-        async function nextWord(isCorrect) {
-            const word = G.studyBatch[G.currentWordIndex];
-            if (!G.userData.learned[word]) {
-                G.userData.learned[word] = { reviewDays: 0, lastReview: getToday(), count: 1 };
-                G.userData.total++;
-                G.userData.today++;
-            } else {
-                const d = G.userData.learned[word];
-                d.count++;
-                d.lastReview = getToday();
-                d.reviewDays = isCorrect ? Math.min(d.reviewDays + 1, CONFIG.REVIEW_CURVE.length - 1) : 0;
-            }
-            saveUserData();
-            showToast(isCorrect ? "✅ 真棒！继续加油" : "🔄 再记一遍吧");
-            G.currentWordIndex++;
-            await renderCurrentWord();
-        }
-
-        function markKnown() {
-            const word = G.studyBatch[G.currentWordIndex];
-            if (G.userData.learned[word]) {
-                G.userData.learned[word].reviewDays = Math.min(G.userData.learned[word].reviewDays + 2, CONFIG.REVIEW_CURVE.length - 1);
-                saveUserData();
-                showToast("📌 标记为熟悉，延长复习间隔");
-            }
-        }
-
-        function markUnknown() {
-            const word = G.studyBatch[G.currentWordIndex];
-            if (G.userData.learned[word]) {
-                G.userData.learned[word].reviewDays = 0;
-                saveUserData();
-                showToast("📌 标记为陌生，将尽快安排复习");
-            }
-        }
-
-        function finishStudy() {
-            G.spellWords = [...G.studyBatch];
-            G.currentSpellIndex = 0;
-            renderSpellWord();
-            switchPage("spellPage");
-            showToast("🎉 本轮学习完成！开始拼写练习");
-        }
-
-        async function renderSpellWord() {
-            if (G.currentSpellIndex >= G.spellWords.length) {
-                showToast("✅ 拼写练习全部完成！");
+        async function showSpellOne() {
+            if (G.sidx >= G.spell.length) {
+                showToast("拼写练习全部完成！");
                 switchPage("homePage");
                 return;
             }
-            const word = G.spellWords[G.currentSpellIndex];
-            const details = await getWordDetails(word);
+            let w = G.spell[G.sidx];
+            let d = await getDetail(w);
             document.getElementById("spellWordInfo").innerHTML = `
-                <strong>发音：</strong>${details.reading}<br>
-                <strong>释义：</strong>${details.meaning}
+                <strong>发音：</strong>${d.reading}<br>
+                <strong>释义：</strong>${d.meaning}
             `;
             document.getElementById("spellInput").value = "";
             document.getElementById("spellInput").focus();
-            document.getElementById("spellProgress").style.width = `${(G.currentSpellIndex / G.spellWords.length) * 100}%`;
+            document.getElementById("spellProgress").style.width = (G.sidx / G.spell.length * 100) + "%";
         }
 
         async function checkSpell() {
-            const input = document.getElementById("spellInput").value.trim();
-            if (!input) { showToast("⚠️ 请输入单词"); return; }
-            const word = G.spellWords[G.currentSpellIndex];
-            const details = await getWordDetails(word);
-            const reading = details.reading.replace(/「|」/g, "");
-            const isCorrect = (input === word || input === reading);
-            if (isCorrect) {
+            let input = document.getElementById("spellInput").value.trim();
+            if (!input) { showToast("请输入单词"); return; }
+            let w = G.spell[G.sidx];
+            let d = await getDetail(w);
+            let reading = d.reading.replace(/「|」/g, "");
+            let correct = (input === w || input === reading);
+            if (correct) {
                 showToast("✅ 正确！");
-                G.currentSpellIndex++;
-                setTimeout(renderSpellWord, 800);
+                G.sidx++;
+                setTimeout(showSpellOne, 800);
             } else {
-                showToast(`❌ 错误，正确答案：${word}（${reading}）`);
+                showToast(`❌ 错误，正确答案：${w}（${reading}）`);
                 document.getElementById("spellInput").value = "";
             }
         }
 
-        function saveUserData() {
-            localStorage.setItem("jpWordStudy", JSON.stringify(G.userData));
-            updateStatsUI();
-        }
-
-        function updateStatsUI() {
-            document.getElementById("money").textContent = (G.userData.total * CONFIG.MONEY_PER_WORD).toFixed(1);
-            document.getElementById("total").textContent = G.userData.total;
-            document.getElementById("today").textContent = G.userData.today;
-            document.getElementById("streak").textContent = G.userData.streak;
-        }
-
-        function resetData() {
-            if (confirm("⚠️ 确定要重置所有学习数据吗？此操作不可恢复！")) {
-                G.userData = { learned: {}, total: 0, today: 0, streak: 0, lastDate: "", calendar: {} };
-                saveUserData();
-                showToast("🗑️ 数据已重置");
+        function markKnown() {
+            let w = G.batch[G.idx];
+            if (G.user.learned[w]) {
+                G.user.learned[w].rev = Math.min(G.user.learned[w].rev + 2, CONFIG.REVIEW.length - 1);
+                save();
+                showToast("标记为熟悉，延长复习间隔");
             }
         }
 
-        function switchPage(pageId) {
-            document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-            document.getElementById(pageId).classList.add("active");
+        function markUnknown() {
+            let w = G.batch[G.idx];
+            if (G.user.learned[w]) {
+                G.user.learned[w].rev = 0;
+                save();
+                showToast("标记为陌生，将尽快安排复习");
+            }
         }
 
-        function shuffleArray(arr) { return [...arr].sort(() => Math.random() - 0.5); }
-        function getToday() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,0)}-${String(d.getDate()).padStart(2,0)}`; }
+        function save() {
+            localStorage.setItem("jpstudy", JSON.stringify(G.user));
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById("money").textContent = (G.user.total * CONFIG.MONEY).toFixed(1);
+            document.getElementById("total").textContent = G.user.total;
+            document.getElementById("today").textContent = G.user.today;
+            document.getElementById("streak").textContent = G.user.streak;
+        }
+
+        function resetData() {
+            if (confirm("确定要重置所有学习数据吗？此操作不可恢复！")) {
+                G.user = { learned: {}, total: 0, today: 0, streak: 0, last: "", cal: {} };
+                save();
+                showToast("数据已重置");
+            }
+        }
+
+        function switchPage(id) {
+            document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+            document.getElementById(id).classList.add("active");
+        }
+
+        function shuffle(a) { return [...a].sort(() => Math.random() - 0.5); }
+        function today() { let d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, 0) + "-" + String(d.getDate()).padStart(2, 0); }
         function dayDiff(a, b) { if (!a || !b) return 999; return Math.floor((new Date(b) - new Date(a)) / 86400000); }
-        function showToast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2000); }
+        function showToast(m) { let t = document.getElementById("toast"); t.textContent = m; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
     </script>
 </body>
 </html>
