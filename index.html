@@ -5,32 +5,193 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>日语单词攒钱计划</title>
     <style>
-        :root { --primary:#2A6F38; --secondary:#7FC590; --bg:#F2F9F4; --text:#333; --white:#fff; --danger:#E57373; }
-        *{box-sizing:border-box}
-        body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);margin:0;display:flex;flex-direction:column;align-items:center}
-        .container{width:100%;max-width:500px;min-height:100vh;padding:20px}
-        .page{display:none}.page.active{display:flex;flex-direction:column}
-        .card{background:var(--white);border-radius:18px;padding:25px;margin-bottom:20px}
-        h1,h2{color:var(--primary);text-align:center}
-        .slogan{text-align:center;color:#666}
-        button{width:100%;padding:16px;border-radius:12px;background:var(--secondary);color:white;border:none;font-weight:bold;margin-bottom:12px}
-        button.danger{background:var(--danger)}
-        button.outline{background:transparent;border:2px solid var(--secondary);color:var(--secondary)}
-        button:disabled{background:#ccc}
-        .word-display{font-size:32px;text-align:center;color:var(--primary);margin:20px 0}
-        .word-info{border-top:1px solid #eee;padding-top:15px}
-        .progress-bar{height:6px;background:#eee;border-radius:3px;margin-bottom:20px}
-        .progress-fill{height:100%;background:var(--secondary)}
-        .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
-        .stat-box{background:white;padding:15px;border-radius:12px;text-align:center}
-        .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-        .cal-day{aspect-ratio:1;background:#eee;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px}
-        .cal-10{background:#c8e6c9}
-        .cal-20{background:#81c784}
-        .cal-30{background:#2e7d32;color:white}
-        .cal-today{border:2px solid var(--primary)}
-        .toast{position:fixed;bottom:30px;left:50%;transform:translate(-50%,50px);background:#2A6F38;color:white;padding:10px 20px;border-radius:8px;opacity:0}
-        .toast.show{transform:translate(-50%,0);opacity:1}
+        :root {
+            --primary: #2A6F38;
+            --secondary: #7FC590;
+            --bg: #F2F9F4;
+            --text: #333;
+            --white: #ffffff;
+            --danger: #E57373;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page { display: none; width: 100%; animation: fadeIn 0.3s ease; }
+        .page.active { display: flex; flex-direction: column; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card {
+            background: var(--white);
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        h1, h2 { color: var(--primary); text-align: center; margin-top: 0; }
+        .slogan { font-size: 14px; color: #666; text-align: center; margin-bottom: 30px; }
+
+        button {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+        button:active { transform: scale(0.98); opacity: 0.9; }
+        button.outline { background: transparent; border: 2px solid var(--secondary); color: var(--secondary); }
+        button.danger { background: var(--danger); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .voice-btn { background: #599d6a; margin-top: 8px; }
+
+        .word-display {
+            font-size: 32px; font-weight: bold; color: var(--primary);
+            text-align: center; margin: 20px 0; cursor: pointer;
+        }
+        .word-info { font-size: 15px; color: #555; border-top: 1px solid #eee; padding-top: 15px; }
+        .info-item { margin-bottom: 8px; }
+        .label { font-weight: bold; color: var(--primary); margin-right: 5px; }
+
+        .progress-bar { height: 6px; background: #eee; border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--secondary); transition: width 0.3s; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-box { background: var(--white); padding: 15px; border-radius: 12px; text-align: center; }
+        .stat-val { font-size: 20px; font-weight: bold; color: var(--primary); }
+        .stat-lbl { font-size: 12px; color: #888; }
+
+        .calendar-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+        .weekday {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .cal-day {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            background: #eef2ef;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cal-10 { background: #c8e6c9; }
+        .cal-20 { background: #81c784; }
+        .cal-30 { background: #2e7d32; color: #fff; }
+        .cal-today { border: 2px solid var(--primary); }
+        .cal-empty { background: transparent; }
+
+        .loading, .error { text-align: center; padding: 20px; font-size: 16px; }
+        .error { color: var(--danger); }
+        .hidden { display: none !important; }
+
+        .spell-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .spell-input:focus { outline: none; border-color: var(--secondary); }
+
+        .spell-hint {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8fff9;
+            border-radius: 8px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(50px);
+            background: rgba(42, 111, 56, 0.9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 999;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        .book-selector { margin: 20px 0; }
+        .book-title { text-align: center; font-size: 16px; color: var(--primary); margin-bottom: 10px; }
+        .book-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .book-btn { padding: 10px 5px; font-size: 14px; border-radius: 8px; background: #f0f8f2; border: 1px solid #d5e9d9; color: var(--primary); }
+        .book-btn.active { background: var(--secondary); color: white; border-color: var(--secondary); }
+        .current-book { text-align: center; font-size: 14px; color: #666; margin: 10px 0; }
+
+        .study-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .back-btn {
+            background: transparent;
+            color: var(--primary);
+            border: none;
+            font-size: 16px;
+            padding: 8px;
+            width: auto;
+        }
+        
+        .summary-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
@@ -39,41 +200,96 @@
     <div id="homePage" class="page active">
         <div class="card">
             <h1>日语单词攒钱计划</h1>
-            <p class="slogan" id="slogan"></p>
-            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:20px 0">
-                <button class="book-btn" onclick="select('n1')">N1</button>
-                <button class="book-btn" onclick="select('n2')">N2</button>
-                <button class="book-btn" onclick="select('n3')">N3</button>
-                <button class="book-btn" onclick="select('n4')">N4</button>
-                <button class="book-btn" onclick="select('n5')">N5</button>
+            <p class="slogan" id="slogan">背一个单词，存一笔财富 🤑</p>
+            <div class="book-selector">
+                <div class="book-title">📚 选择单词本</div>
+                <div class="book-grid">
+                    <button class="book-btn" onclick="selectBook('n1','N1')">N1</button>
+                    <button class="book-btn" onclick="selectBook('n2','N2')">N2</button>
+                    <button class="book-btn" onclick="selectBook('n3','N3')">N3</button>
+                    <button class="book-btn" onclick="selectBook('n4','N4')">N4</button>
+                    <button class="book-btn" onclick="selectBook('n5','N5')">N5</button>
+                </div>
+                <div class="current-book" id="currentBookText">未选择单词本</div>
             </div>
-            <button id="study" disabled onclick="startStudy()">学习新单词</button>
-            <button id="review" disabled onclick="startReview()">复习单词</button>
-            <button class="danger" onclick="openStats()">💰 攒钱进度</button>
+            <button id="btnStudyNew" disabled onclick="startStudy('new')">📖 学习新单词</button>
+            <button id="btnStudyReview" disabled onclick="startStudy('review')">🔁 复习单词</button>
+            <button class="danger" onclick="goToStats()">💰 攒钱进度</button>
         </div>
     </div>
 
     <div id="studyPage" class="page">
         <div class="card">
-            <div class="word-display" id="word"></div>
-            <div class="word-info">
-                <div>发音：<span id="read"></span></div>
-                <div>释义：<span id="mean"></span></div>
+            <div class="study-header">
+                <button class="back-btn" onclick="switchPage('homePage')">← 返回</button>
+                <h2 id="studyTitle">学习中</h2>
             </div>
-            <button onclick="next()">记住了</button>
-            <button class="outline" onclick="back()">返回</button>
+            <div class="progress-bar"><div class="progress-fill" id="studyProgress"></div></div>
+            <div class="word-display" id="showWord"></div>
+            <div class="word-info">
+                <div class="info-item"><span class="label">发音：</span><span id="p">-</span></div>
+                <div class="info-item"><span class="label">释义：</span><span id="m">-</span></div>
+                <div class="info-item"><span class="label">搭配：</span><span id="collocation">-</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <button onclick="markKnown()">✅ 熟</button>
+                <button class="danger" onclick="markUnknown()">❌ 生</button>
+            </div>
+            <button onclick="nextWord(true)">记住了 ➜</button>
+            <button class="outline" onclick="nextWord(false)">记错了 🔄</button>
+        </div>
+    </div>
+
+    <div id="finishPage" class="page">
+        <div class="card">
+            <h2>本轮学习完成</h2>
+            <button onclick="startSpellCheck()">拼写测试</button>
+            <button onclick="showSummary()">学习小结</button>
+            <button class="outline" onclick="switchPage('homePage')">返回主页</button>
+        </div>
+    </div>
+
+    <div id="spellPage" class="page">
+        <div class="card">
+            <h2>拼写测试</h2>
+            <div class="progress-bar"><div class="progress-fill" id="spellProgress"></div></div>
+            <div class="spell-hint" id="spellHint"></div>
+            <input class="spell-input" id="spellInput" placeholder="请输入单词">
+            <button onclick="checkSpell()">提交答案</button>
+        </div>
+    </div>
+
+    <div id="summaryPage" class="page">
+        <div class="card">
+            <h2>学习小结</h2>
+            <div id="summaryList"></div>
+            <button onclick="switchPage('homePage')">完成</button>
         </div>
     </div>
 
     <div id="statsPage" class="page">
         <div class="card">
-            <h2>💰 攒钱进度</h2>
+            <h2>💰 我的攒钱进度</h2>
             <div class="stat-grid">
-                <div class="stat-box">今日：<span id="d">0</span></div>
-                <div class="stat-box">总计：<span id="t">0</span></div>
+                <div class="stat-box"><div class="stat-val" id="todayCount">0</div><div class="stat-lbl">今日学习</div></div>
+                <div class="stat-box"><div class="stat-val" id="totalCount">0</div><div class="stat-lbl">总学习</div></div>
+                <div class="stat-box"><div class="stat-val" id="todayMoney">0</div><div class="stat-lbl">今日收益(元)</div></div>
+                <div class="stat-box"><div class="stat-val" id="totalMoney">0</div><div class="stat-lbl">总收益(元)</div></div>
             </div>
-            <br>
-            <button onclick="goHome()">返回</button>
+
+            <h3 style="font-size:16px;">📅 学习日历</h3>
+            <div class="calendar-header">
+                <div class="weekday">一</div>
+                <div class="weekday">二</div>
+                <div class="weekday">三</div>
+                <div class="weekday">四</div>
+                <div class="weekday">五</div>
+                <div class="weekday">六</div>
+                <div class="weekday">日</div>
+            </div>
+            <div class="calendar" id="studyCalendar"></div>
+
+            <button onclick="switchPage('homePage')">返回</button>
         </div>
     </div>
 </div>
@@ -81,49 +297,201 @@
 <div class="toast" id="toast"></div>
 
 <script>
-let book = "";
-let user = JSON.parse(localStorage.getItem("jp"))||{daily:{},total:0};
+let currentItem = null;
+const CONFIG = { BATCH_SIZE: 10 };
+const WORD_BANK = { n1:[], n2:[], n3:[], n4:[], n5:[] };
 
-// 随机标语
-const slogans = ["背一个单词，存一笔财富🤑","今天努力，明天存款✨","单词背得稳，小钱攒得准💰"];
-document.getElementById("slogan").innerText = slogans[Math.floor(Math.random()*slogans.length)];
+let G = {
+  currentBook: "", currentBookName: "",
+  studyBatch: [], currentIndex: 0,
+  spellList: [], spellMap: {}
+};
 
-// 选择单词本
-function select(b){
-    book=b;
-    document.getElementById("study").disabled=false;
-    document.getElementById("review").disabled=false;
-    show("已选择："+b);
+let USER = JSON.parse(localStorage.getItem("jpStudy") || `{
+  "learned":{}, "collocations":{}, "total":0, "daily":{}
+}`);
+
+async function loadAllJson() {
+  for (let i=1; i<=5; i++) {
+    const level = `n${i}`;
+    try {
+      const res = await fetch(`./${level}.json`);
+      WORD_BANK[level] = await res.json();
+    } catch(e) {}
+  }
 }
 
-// 学习
-function startStudy(){ showPage("studyPage"); setWord(); }
-function startReview(){ showPage("studyPage"); setWord(); }
-function setWord(){ document.getElementById("word").textContent="テスト"; document.getElementById("read").textContent="test"; document.getElementById("mean").textContent="测试"; }
-function next(){ setWord(); }
-function back(){ showPage("homePage"); }
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadAllJson();
+  randomSlogan();
+});
 
-// 攒钱进度 —— 100% 可打开
-function openStats(){
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById("d").innerText = user.daily[today]||0;
-    document.getElementById("t").innerText = user.total||0;
-    showPage("statsPage");
+function randomSlogan() {
+  const list = [
+    "背一个单词，存一笔财富 🤑",
+    "今天的努力，明天的存款 ✨",
+    "单词背得稳，小钱攒得准 💰",
+    "积少成多，日语暴富 🚀",
+    "学一个词，多一块钱 💹",
+    "坚持背单词，钱包会感恩 🧧",
+    "知识不白学，每词都值钱 🏆"
+  ];
+  const txt = list[Math.floor(Math.random() * list.length)];
+  document.getElementById("slogan").innerText = txt;
 }
 
-// 页面切换
-function showPage(id){
-    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
+function selectBook(bk, name) {
+  G.currentBook = bk;
+  G.currentBookName = name;
+  document.getElementById("currentBookText").textContent = "当前：" + name;
+  document.querySelectorAll(".book-btn").forEach(x => x.classList.remove("active"));
+  if(event) event.target.classList.add("active");
+  document.getElementById("btnStudyNew").disabled = false;
+  document.getElementById("btnStudyReview").disabled = false;
+  showToast("✅ 已选择：" + name);
 }
-function goHome(){ showPage("homePage"); }
 
-// 提示
-function show(m){
-    const t=document.getElementById("toast");
-    t.textContent=m;
-    t.classList.add("show");
-    setTimeout(()=>t.classList.remove("show"),1500);
+function startStudy(mode) {
+  const list = WORD_BANK[G.currentBook];
+  if (!list || list.length < 1) { showToast("单词库为空"); return; }
+  G.studyBatch = list.sort(() => Math.random() - 0.5).slice(0, CONFIG.BATCH_SIZE);
+  G.currentIndex = 0;
+  renderWord();
+  switchPage("studyPage");
+}
+
+function renderWord() {
+  const item = G.studyBatch[G.currentIndex];
+  currentItem = item;
+  document.getElementById("showWord").textContent = item.word;
+  document.getElementById("p").textContent = item.reading;
+  document.getElementById("m").textContent = item.meaning;
+  document.getElementById("collocation").textContent = USER.collocations[item.word] || "未设置";
+  document.getElementById("studyProgress").style.width = (G.currentIndex / G.studyBatch.length * 100) + "%";
+}
+
+function nextWord(ok) {
+  const w = G.studyBatch[G.currentIndex].word;
+  if (!USER.learned[w]) {
+    USER.learned[w] = ok ? 1 : 0;
+    USER.total++;
+    const d = new Date().toISOString().split('T')[0];
+    USER.daily[d] = (USER.daily[d] || 0) + 1;
+    save();
+  }
+  G.currentIndex++;
+  if (G.currentIndex >= G.studyBatch.length) {
+    switchPage("finishPage");
+    return;
+  }
+  renderWord();
+}
+
+function startSpellCheck() {
+  G.spellList = [...G.studyBatch];
+  G.spellMap = {};
+  runSpell();
+}
+
+function runSpell() {
+  if (G.spellList.length === 0) {
+    showToast("🎉 拼写测试通关！");
+    switchPage("homePage");
+    return;
+  }
+  const w = G.spellList[0];
+  document.getElementById("spellHint").textContent = `请拼写：${w.meaning}`;
+  document.getElementById("spellInput").value = "";
+  document.getElementById("spellProgress").style.width = ((CONFIG.BATCH_SIZE - G.spellList.length) / CONFIG.BATCH_SIZE * 100) + "%";
+  switchPage("spellPage");
+}
+
+function checkSpell() {
+  const target = G.spellList[0];
+  const val = document.getElementById("spellInput").value.trim();
+  const correct = (val === target.word || val === target.reading);
+  if (correct) {
+    G.spellList.shift();
+  }
+  runSpell();
+}
+
+function showSummary() {
+  let html = "";
+  G.studyBatch.forEach(w => {
+    const ok = USER.learned[w.word] ? "✅ 掌握" : "❌ 未掌握";
+    html += `<div class="summary-item">${w.word}：${ok}</div>`;
+  });
+  document.getElementById("summaryList").innerHTML = html;
+  switchPage("summaryPage");
+}
+
+function goToStats() {
+  renderStats();
+  switchPage("statsPage");
+}
+
+function renderStats() {
+  const d = new Date().toISOString().split('T')[0];
+  const todayNum = USER.daily[d] || 0;
+  const totalNum = USER.total;
+  document.getElementById("todayCount").textContent = todayNum;
+  document.getElementById("totalCount").textContent = totalNum;
+  document.getElementById("todayMoney").textContent = (todayNum * 0.1).toFixed(1);
+  document.getElementById("totalMoney").textContent = (totalNum * 0.1).toFixed(1);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const cal = document.getElementById("studyCalendar");
+  cal.innerHTML = "";
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const first = new Date(year, month, 1).getDay() || 7;
+  const days = new Date(year, month+1, 0).getDate();
+
+  for (let i=1; i<first; i++) {
+    const e = document.createElement("div");
+    e.className = "cal-empty";
+    cal.appendChild(e);
+  }
+
+  for (let day=1; day<=days; day++) {
+    const key = `${year}-${String(month+1).padStart(2,0)}-${String(day).padStart(2,0)}`;
+    const cnt = USER.daily[key] || 0;
+    const e = document.createElement("div");
+    e.className = "cal-day";
+    e.textContent = day;
+    if (day === now.getDate()) e.classList.add("cal-today");
+    if (cnt >= 10 && cnt <20) e.classList.add("cal-10");
+    if (cnt >=20 && cnt <30) e.classList.add("cal-20");
+    if (cnt >=30) e.classList.add("cal-30");
+    cal.appendChild(e);
+  }
+}
+
+function save() {
+  localStorage.setItem("jpStudy", JSON.stringify(USER));
+}
+
+function markKnown() {
+  USER.learned[currentItem.word] = 1; save(); showToast("✅ 已掌握");
+}
+function markUnknown() {
+  USER.learned[currentItem.word] = 0; save(); showToast("🔄 需复习");
+}
+
+function switchPage(id) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function showToast(m) {
+  const t = document.getElementById("toast");
+  t.textContent = m;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1800);
 }
 </script>
 </body>
