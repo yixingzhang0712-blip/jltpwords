@@ -2,8 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 🔥 修复3：锁定H5页面，禁止缩放误触 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>阿文的日语小站</title>
     <style>
         :root {
@@ -53,7 +52,6 @@
         h1, h2 { color: var(--primary); text-align: center; margin-top: 0; }
         .slogan { font-size: 14px; color: #666; text-align: center; margin-bottom: 30px; }
 
-        /* 首页按钮统一宽度 */
         button {
             background: var(--secondary);
             color: white;
@@ -75,7 +73,6 @@
         button:disabled { background: #ccc; cursor: not-allowed; }
         .voice-btn { background: #599d6a; margin-top: 8px; font-size: 14px; padding: 10px; }
 
-        /* 学习界面UI优化 */
         .word-display {
             font-size: 28px; font-weight: bold; color: var(--primary);
             text-align: center; margin: 18px 0;
@@ -84,7 +81,6 @@
         .info-item { margin-bottom: 8px; }
         .label { font-weight: bold; color: var(--primary); margin-right: 5px; }
 
-        /* 单词笔记 */
         .note-area {
             width: 100%;
             min-height: 80px;
@@ -121,7 +117,7 @@
         .stat-val { font-size: 20px; font-weight: bold; color: var(--primary); }
         .stat-lbl { font-size: 12px; color: #888; }
 
-        /* 学习日历（标准周日起始） */
+        /* 标准周日起始日历 */
         .calendar-header {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -148,12 +144,14 @@
             align-items: center;
             justify-content: center;
             transition: 0.2s;
+            cursor: pointer;
         }
+        .cal-day:hover { opacity: 0.8; }
         .cal-active-1 { background: #c8e6c9; }
         .cal-active-2 { background: #81c784; }
         .cal-active-3 { background: #4caf50; color: white; }
         .cal-today { border: 2px solid var(--primary); }
-        .cal-empty { background: transparent; }
+        .cal-empty { background: transparent; cursor: default; }
 
         .loading, .error { text-align: center; padding: 20px; font-size: 16px; }
         .error { color: var(--danger); }
@@ -203,7 +201,6 @@
             border: 2px solid var(--danger);
         }
 
-        /* 提示框 */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -227,7 +224,7 @@
         .book-btn.active { background: var(--secondary); color: white; border-color: var(--secondary); }
         .current-book { text-align: center; font-size: 14px; color: #666; margin: 10px 0; }
 
-        /* 🔥 修复1：学习页顶部统一字号 + 左右对齐 */
+        /* 学习页顶部：统一字号 + 左右对齐 */
         .study-header {
             display: flex;
             justify-content: space-between;
@@ -261,18 +258,10 @@
         .summary-meaning { color: #555; margin-left: 8px; }
         .summary-list { max-height: 60vh; overflow-y: auto; margin-bottom: 20px; }
 
-        /* 三按钮精简样式 */
         .mini-btn {
             padding: 10px !important;
             font-size: 14px !important;
             margin-bottom: 8px !important;
-        }
-        /* 🔥 修复2：底部按钮增加间距 + 横向并排 */
-        .bottom-btn-group {
-            margin-top: 20px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
         }
     </style>
 </head>
@@ -306,10 +295,9 @@
         </div>
     </div>
 
-    <!-- 3. 学习页 -->
+    <!-- 3. 学习/复习页 -->
     <div id="studyPage" class="page">
         <div class="card">
-            <!-- 顶部统一排版 -->
             <div class="study-header">
                 <button class="back-btn" onclick="switchPage('homePage')">← 返回</button>
                 <h2 id="studyTitle">学习中</h2>
@@ -334,18 +322,16 @@
                 <button class="danger mini-btn" onclick="markUnknown()">生</button>
             </div>
 
-            <!-- 🔥 修复2：底部按钮并排+间距 -->
-            <div class="bottom-btn-group">
-                <button onclick="nextWord(true)">记住了 ➜</button>
-                <button class="outline" onclick="nextWord(false)">记错了 🔄</button>
-            </div>
+            <!-- 垂直排列：记住了 / 记错了 -->
+            <button onclick="nextWord(true)" style="margin-top:20px;">记住了 ➜</button>
+            <button class="outline" onclick="markAsUnknownAndNext()">记错了 🔄</button>
         </div>
     </div>
 
-    <!-- 4. 选择页 -->
+    <!-- 4. 完成页 -->
     <div id="selectPage" class="page">
         <div class="card">
-            <h2>🎉 本组学习完成</h2>
+            <h2>🎉 学习完成</h2>
             <p class="slogan">请选择后续操作</p>
             <button onclick="goToSpellReview()">✍️ 拼写复习</button>
             <button class="outline" onclick="goToSummary()">📋 学习小结</button>
@@ -353,17 +339,17 @@
         </div>
     </div>
 
-    <!-- 5. 学习小结页 -->
+    <!-- 5. 小结页 -->
     <div id="summaryPage" class="page">
         <div class="card">
-            <h2>📋 本组单词小结</h2>
+            <h2>📋 单词小结</h2>
             <div class="summary-list" id="summaryList"></div>
             <button onclick="goToSpellReview()">✍️ 去拼写复习</button>
             <button class="danger" onclick="switchPage('homePage')">🏠 返回首页</button>
         </div>
     </div>
 
-    <!-- 6. 拼写复习页 -->
+    <!-- 6. 拼写页 -->
     <div id="spellReviewPage" class="page">
         <div class="card">
             <div class="study-header">
@@ -395,7 +381,6 @@
                 <div class="stat-box"><div class="stat-val" id="streak">0</div><div class="stat-lbl">连续天数</div></div>
             </div>
 
-            <!-- 🔥 修复5：删除点击详情 + 周日起始日历 -->
             <h3 style="font-size:16px;">📅 学习日历</h3>
             <div class="calendar-header">
                 <div class="weekday">日</div>
@@ -430,7 +415,9 @@ let spellBatch = [];
 
 let G = {
   currentBook: "", currentBookName: "",
-  studyBatch: [], currentIndex: 0
+  studyBatch: [], currentIndex: 0,
+  studyMode: "new",
+  totalReviewCount: 0
 };
 
 // 激励语
@@ -500,10 +487,18 @@ function getLearnedCount() {
   const bookWords = WORD_BANK[G.currentBook].map(item => item.word);
   return Object.keys(USER.learned).filter(w => bookWords.includes(w)).length;
 }
-function updateStudyTitle() {
-  const total = WORD_BANK[G.currentBook]?.length || 0;
-  const learned = getLearnedCount();
-  document.getElementById("studyTitle").textContent = `学习中 ${learned}/${total}`;
+
+// 学习/复习 标题+进度
+function updateStudyTitleAndProgress() {
+  if(G.studyMode === "new"){
+    const total = WORD_BANK[G.currentBook]?.length || 0;
+    const learned = getLearnedCount();
+    document.getElementById("studyTitle").textContent = `学习中 ${learned}/${total}`;
+    document.getElementById("studyProgress").style.width = (G.currentIndex / G.studyBatch.length * 100) + "%";
+  } else {
+    document.getElementById("studyTitle").textContent = `复习中 ${G.currentIndex}/${G.totalReviewCount}`;
+    document.getElementById("studyProgress").style.width = (G.currentIndex / G.totalReviewCount * 100) + "%";
+  }
 }
 
 // 学习激励
@@ -511,13 +506,11 @@ function checkMotivation() {
   const todayCount = USER.today;
   if(todayCount >=50 && !hasMotivation50) {
     hasMotivation50 = true;
-    const msg = MOTIVATION_50[Math.floor(Math.random()*MOTIVATION_50.length)];
-    showToast(msg);
+    showToast(MOTIVATION_50[Math.floor(Math.random()*MOTIVATION_50.length)]);
   }
   if(todayCount >=100 && !hasMotivation100) {
     hasMotivation100 = true;
-    const msg = MOTIVATION_100[Math.floor(Math.random()*MOTIVATION_100.length)];
-    showToast(msg);
+    showToast(MOTIVATION_100[Math.floor(Math.random()*MOTIVATION_100.length)]);
   }
 }
 
@@ -528,15 +521,52 @@ function saveNoteManual() {
   const note = document.getElementById("wordNote").value;
   
   if (!USER.learned[w]) {
-    USER.learned[w] = {
-      status: 0, learnDate: getToday(), nextReview: getFutureDate(1), reviewCount: 0, note: note
-    };
+    USER.learned[w] = { status:0, learnDate:getToday(), nextReview:getFutureDate(1), reviewCount:0, note:note };
   } else {
     USER.learned[w].note = note;
   }
-  
   save();
   showToast("✅ 笔记保存成功！");
+}
+
+// ==========================
+// 🔥 恢复：日历点击查看当日学习单词
+// ==========================
+function showDayStudy(dateStr){
+  const count = USER.cal[dateStr] || 0;
+  if(count === 0){
+    showToast(`📅 ${dateStr} 无学习记录`);
+    return;
+  }
+  // 筛选当日学习的单词
+  const todayWords = Object.entries(USER.learned)
+    .filter(([w, data]) => data.learnDate === dateStr)
+    .map(([w, data]) => w);
+  
+  if(todayWords.length === 0){
+    showToast(`📅 ${dateStr}：学习 ${count} 词`);
+  } else {
+    showToast(`📅 ${dateStr}：${todayWords.join('、')}`);
+  }
+}
+
+// ==========================
+// 核心：记错了按钮
+// ==========================
+function markAsUnknownAndNext(){
+  if(!currentItem) return;
+  const w = currentItem.word;
+  USER.learned[w].status = 0;
+  USER.learned[w].reviewCount = 0;
+  USER.learned[w].nextReview = getToday();
+  save();
+  showToast("🔄 已标记为生词，将重新复习");
+  G.currentIndex++;
+  if (G.currentIndex >= G.studyBatch.length) {
+    showToast("🎉 本组完成");
+    switchPage("selectPage");
+    return;
+  }
   renderWord();
 }
 
@@ -547,9 +577,7 @@ async function loadAllJson() {
     try {
       const res = await fetch(`./${level}.json`);
       WORD_BANK[level] = await res.json();
-    } catch (e) {
-      WORD_BANK[level] = [];
-    }
+    } catch (e) { WORD_BANK[level] = []; }
   }
 }
 
@@ -563,10 +591,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   
   const lastDate = USER.last || "";
   if(lastDate !== getToday()) {
-    hasMotivation50 = false;
-    hasMotivation100 = false;
-    USER.last = getToday();
-    save();
+    hasMotivation50 = false; hasMotivation100 = false;
+    USER.last = getToday(); save();
   }
 });
 
@@ -582,23 +608,20 @@ function selectBook(bk, name) {
   showToast("✅ 已选择：" + name);
 }
 
-// 学习/复习
+// 学习/复习 分离逻辑
 function startStudy(mode) {
   const fullList = WORD_BANK[G.currentBook];
   if (!fullList || fullList.length < 1) {
-    showToast("❌ 单词库为空");
-    return;
+    showToast("❌ 单词库为空"); return;
   }
-
-  let targetList = [];
+  G.studyMode = mode;
   const today = getToday();
+  let targetList = [];
 
   if (mode === 'new') {
     targetList = fullList.filter(item => !USER.learned[item.word]);
-    if (targetList.length === 0) {
-      showToast("🎉 当前单词本已全部学完！");
-      return;
-    }
+    if (targetList.length === 0) { showToast("🎉 已全部学完！"); return; }
+    G.studyBatch = targetList.sort(()=>Math.random()-0.5).slice(0, CONFIG.BATCH_SIZE);
   }
 
   if (mode === 'review') {
@@ -606,14 +629,11 @@ function startStudy(mode) {
       const wordData = USER.learned[item.word];
       return wordData && wordData.nextReview <= today;
     });
-    
-    if (targetList.length === 0) {
-      showToast("✅ 今日暂无需要复习的单词！");
-      return;
-    }
+    G.totalReviewCount = targetList.length;
+    if (targetList.length === 0) { showToast("✅ 今日无待复习单词！"); return; }
+    G.studyBatch = [...targetList];
   }
 
-  G.studyBatch = targetList.sort(() => Math.random() - 0.5).slice(0, CONFIG.BATCH_SIZE);
   G.currentIndex = 0;
   renderWord();
   switchPage("studyPage");
@@ -621,12 +641,8 @@ function startStudy(mode) {
 
 // 上一词
 function prevWord() {
-  if(G.currentIndex <= 0) {
-    showToast("🔔 已经是第一个单词啦");
-    return;
-  }
-  G.currentIndex--;
-  renderWord();
+  if(G.currentIndex <= 0) { showToast("🔔 第一个单词"); return; }
+  G.currentIndex--; renderWord();
 }
 
 function renderWord() {
@@ -635,75 +651,54 @@ function renderWord() {
   document.getElementById("showWord").textContent = item.word;
   document.getElementById("p").textContent = item.reading;
   document.getElementById("m").textContent = item.meaning;
-  
-  const note = USER.learned[item.word]?.note || "";
-  document.getElementById("wordNote").value = note;
-  
-  updateStudyTitle();
-  document.getElementById("studyProgress").style.width = (G.currentIndex / G.studyBatch.length * 100) + "%";
+  document.getElementById("wordNote").value = USER.learned[item.word]?.note || "";
+  updateStudyTitleAndProgress();
 }
 
-// ==========================
-// 🔥 修复4：生词标记逻辑（自动进入复习库）
-// ==========================
+// 标记熟/生
 function markKnown() {
   if(!currentItem) return;
-  const w = currentItem.word;
-  if(USER.learned[w]) {
-    USER.learned[w].status = 1;
-    save();
-    showToast("✅ 已掌握");
-  }
+  USER.learned[currentItem.word].status = 1;
+  save(); showToast("✅ 已掌握");
 }
 function markUnknown() {
   if(!currentItem) return;
   const w = currentItem.word;
-  if(USER.learned[w]) {
-    // 标记生：重置复习状态，次日重新复习
-    USER.learned[w].status = 0;
-    USER.learned[w].reviewCount = 0;
-    USER.learned[w].nextReview = getToday(); // 立即进入待复习
-    save();
-    showToast("🔄 已标记为生词，将重新复习");
-  }
+  USER.learned[w].status = 0;
+  USER.learned[w].reviewCount = 0;
+  USER.learned[w].nextReview = getToday();
+  save(); showToast("🔄 已标记为生词");
 }
 
-// 艾宾浩斯核心
+// 艾宾浩斯核心逻辑
 function nextWord(ok) {
   const w = G.studyBatch[G.currentIndex].word;
   const today = getToday();
 
   if (!USER.learned[w]) {
     USER.learned[w] = {
-      status: ok ? 1 : 0,
-      learnDate: today,
-      nextReview: getFutureDate(1),
-      reviewCount: 0,
+      status: ok ? 1 : 0, learnDate: today,
+      nextReview: getFutureDate(1), reviewCount: 0,
       note: document.getElementById("wordNote").value
     };
-    USER.total++;
-    USER.today++;
-    USER.cal[today] = (USER.cal[today] || 0) + 1;
+    USER.total++; USER.today++; USER.cal[today] = (USER.cal[today]||0)+1;
   } else {
     const word = USER.learned[w];
     word.status = ok ? 1 : 0;
-    
     if (ok) {
       word.reviewCount++;
-      if (word.reviewCount === 1) word.nextReview = getFutureDate(3);
-      else if (word.reviewCount >= 2) word.nextReview = getFutureDate(7);
+      if(word.reviewCount ===1) word.nextReview = getFutureDate(3);
+      else if(word.reviewCount >=2) word.nextReview = getFutureDate(7);
     } else {
-      word.reviewCount = 0;
-      word.nextReview = getToday();
+      word.reviewCount =0; word.nextReview = today;
     }
   }
 
-  save();
-  checkMotivation();
-  
+  save(); checkMotivation();
   G.currentIndex++;
+  
   if (G.currentIndex >= G.studyBatch.length) {
-    showToast("🎉 本组单词学习完成");
+    showToast("🎉 完成！");
     switchPage("selectPage");
     return;
   }
@@ -717,19 +712,14 @@ function goToSummary() {
   G.studyBatch.forEach((item, index) => {
     const div = document.createElement("div");
     div.className = "summary-item";
-    div.innerHTML = `
-      <span class="summary-word">${index+1}. ${item.word}</span>
-      <span class="summary-meaning">${item.meaning}</span>
-    `;
+    div.innerHTML = `<span class="summary-word">${index+1}. ${item.word}</span><span class="summary-meaning">${item.meaning}</span>`;
     list.appendChild(div);
   });
   switchPage("summaryPage");
 }
 function goToSpellReview() {
-  spellBatch = [...G.studyBatch];
-  spellIndex = 0;
-  renderSpellWord();
-  switchPage("spellReviewPage");
+  spellBatch = [...G.studyBatch]; spellIndex=0;
+  renderSpellWord(); switchPage("spellReviewPage");
 }
 function renderSpellWord() {
   const item = spellBatch[spellIndex];
@@ -744,32 +734,24 @@ function renderSpellWord() {
 function checkSpell() {
   const input = document.getElementById("spellInput").value.trim();
   const item = spellBatch[spellIndex];
-  const correctWord = item.word;
-  const correctReading = item.reading;
-  const tipEl = document.getElementById("spellTip");
-
-  if (input === correctWord || input === correctReading) {
-    tipEl.className = "spell-tip correct";
-    tipEl.innerHTML = "✅ 回答正确！";
+  if (input === item.word || input === item.reading) {
+    document.getElementById("spellTip").className = "spell-tip correct";
+    document.getElementById("spellTip").innerHTML = "✅ 正确！";
     spellIndex++;
-    setTimeout(() => {
-      if (spellIndex >= spellBatch.length) {
-        showToast("🎉 拼写复习全部完成！");
-        switchPage("selectPage");
-        return;
-      }
+    setTimeout(()=>{
+      if(spellIndex >= spellBatch.length){ showToast("🎉 拼写完成！"); switchPage("selectPage"); return; }
       renderSpellWord();
-    }, 800);
+    },800);
   } else {
-    tipEl.className = "spell-tip wrong";
-    tipEl.innerHTML = `❌ 错误<br>正确：${correctWord}（${correctReading}）`;
+    document.getElementById("spellTip").className = "spell-tip wrong";
+    document.getElementById("spellTip").innerHTML = `❌ 错误<br>正确：${item.word}（${item.reading}）`;
     document.getElementById("spellInput").value = "";
     document.getElementById("spellInput").focus();
   }
 }
 
 // ==========================
-// 🔥 修复5：日历周日起始
+// 日历渲染（恢复点击功能）
 // ==========================
 function initStudyCalendar() {
   const cal = document.getElementById("studyCalendar");
@@ -777,28 +759,33 @@ function initStudyCalendar() {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
-  // 周日为第一列
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+  // 空白日期
   for (let i = 0; i < firstDay; i++) {
-    const el = document.createElement("div");
-    el.className = "cal-empty";
+    const el = document.createElement("div"); 
+    el.className = "cal-empty"; 
     cal.appendChild(el);
   }
 
+  // 日期渲染 + 点击事件
   for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const el = document.createElement("div");
     el.className = "cal-day";
     el.textContent = day;
 
-    if (day === now.getDate()) el.classList.add("cal-today");
+    // 今日标记
+    if(day === now.getDate()) el.classList.add("cal-today");
+    // 学习强度
     const cnt = USER.cal[dateStr] || 0;
-    if (cnt >= 10) el.classList.add("cal-active-3");
-    else if (cnt >= 5) el.classList.add("cal-active-2");
-    else if (cnt >= 1) el.classList.add("cal-active-1");
+    if(cnt>=10) el.classList.add("cal-active-3");
+    else if(cnt>=5) el.classList.add("cal-active-2");
+    else if(cnt>=1) el.classList.add("cal-active-1");
 
+    // 🔥 恢复点击查看当日学习记录
+    el.onclick = () => showDayStudy(dateStr);
     cal.appendChild(el);
   }
 }
@@ -806,8 +793,7 @@ function initStudyCalendar() {
 // 数据存储
 function save() {
   localStorage.setItem("jpStudy", JSON.stringify(USER));
-  updateUI();
-  initStudyCalendar();
+  updateUI(); initStudyCalendar();
 }
 function updateUI() {
   document.getElementById("money").textContent = (USER.total * CONFIG.MONEY_PER_WORD).toFixed(1);
@@ -816,12 +802,10 @@ function updateUI() {
   document.getElementById("streak").textContent = USER.streak;
 }
 function resetData() {
-  if (confirm("确定重置？所有学习记录将清空！")) {
-    USER = { learned: {}, total: 0, today: 0, streak: 0, last: "", cal: {} };
-    hasMotivation50 = false;
-    hasMotivation100 = false;
-    save();
-    showToast("✅ 数据已重置");
+  if(confirm("确定重置？所有记录清空！")){
+    USER = { learned:{}, total:0, today:0, streak:0, last:"", cal:{} };
+    hasMotivation50=hasMotivation100=false;
+    save(); showToast("✅ 数据重置");
   }
 }
 function switchPage(id) {
@@ -831,9 +815,8 @@ function switchPage(id) {
 }
 function showToast(m) {
   const t = document.getElementById("toast");
-  t.textContent = m;
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2200);
+  t.textContent = m; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2200);
 }
 
 // 日语发音
@@ -843,14 +826,12 @@ function loadVoices() {
 }
 window.addEventListener('load', () => {
   speechSynthesis.onvoiceschanged = loadVoices;
-  setTimeout(loadVoices, 500);
+  setTimeout(loadVoices,500);
 });
 function speakWord() {
-  if (!currentItem || !japaneseVoice) return;
+  if(!currentItem || !japaneseVoice) return;
   const u = new SpeechSynthesisUtterance(currentItem.word);
-  u.voice = japaneseVoice;
-  u.lang = 'ja-JP';
-  u.rate = 0.9;
+  u.voice = japaneseVoice; u.lang='ja-JP'; u.rate=0.9;
   speechSynthesis.speak(u);
 }
 </script>
