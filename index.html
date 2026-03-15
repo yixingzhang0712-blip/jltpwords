@@ -287,10 +287,13 @@
             <div class="note-label">📝 单词笔记（例句/搭配）</div>
             <textarea class="note-area" id="wordNote" oninput="saveNote()" placeholder="在这里记录单词搭配、例句、语法笔记..."></textarea>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <button onclick="markKnown()">✅ 熟（已掌握）</button>
-                <button class="danger" onclick="markUnknown()">❌ 生（需复习）</button>
+            <!-- 三栏按钮：返回上一词 + 会 + 不会 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                <button class="outline" onclick="prevWord()" id="prevBtn">⬅️ 上一词</button>
+                <button onclick="markKnown()">✅ 会</button>
+                <button class="danger" onclick="markUnknown()">❌ 不会</button>
             </div>
+
             <button onclick="nextWord(true)">记住了 ➜</button>
             <button class="outline" onclick="nextWord(false)">记错了 🔄</button>
         </div>
@@ -541,6 +544,18 @@ function startStudy(mode) {
   switchPage("studyPage");
 }
 
+// ==========================
+// 新增：返回上一词
+// ==========================
+function prevWord() {
+  if(G.currentIndex <= 0) {
+    showToast("🔔 已经是第一个单词啦");
+    return;
+  }
+  G.currentIndex--;
+  renderWord();
+}
+
 function renderWord() {
   const item = G.studyBatch[G.currentIndex];
   currentItem = item;
@@ -552,7 +567,7 @@ function renderWord() {
   const note = USER.learned[item.word]?.note || "";
   document.getElementById("wordNote").value = note;
   
-  // 更新进度标题
+  // 更新进度标题+进度条
   updateStudyTitle();
   document.getElementById("studyProgress").style.width = (G.currentIndex / G.studyBatch.length * 100) + "%";
 }
