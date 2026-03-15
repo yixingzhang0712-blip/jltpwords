@@ -77,6 +77,29 @@
         .info-item { margin-bottom: 8px; }
         .label { font-weight: bold; color: var(--primary); margin-right: 5px; }
 
+        /* 单词笔记样式 */
+        .note-area {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: 14px;
+            margin: 15px 0;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .note-area:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+        .note-label {
+            font-size: 14px;
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
         .progress-bar { height: 6px; background: #eee; border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
         .progress-fill { height: 100%; background: var(--secondary); transition: width 0.3s; }
 
@@ -227,7 +250,7 @@
     <div id="homePage" class="page">
         <div class="card">
             <h1>日语单词攒钱计划</h1>
-            <p class="slogan">背一个单词，存一笔财富 🤑</p>
+            <p class="slogan" id="slogan">背一个单词，存一笔财富 🤑</p>
             <div class="book-selector">
                 <div class="book-title">📚 选择单词本</div>
                 <div class="book-grid">
@@ -259,6 +282,11 @@
                 <div class="info-item"><span class="label">发音：</span><span id="p">-</span></div>
                 <div class="info-item"><span class="label">释义：</span><span id="m">-</span></div>
             </div>
+
+            <!-- 单词笔记功能 -->
+            <div class="note-label">📝 单词笔记（例句/搭配）</div>
+            <textarea class="note-area" id="wordNote" oninput="saveNote()" placeholder="在这里记录单词搭配、例句、语法笔记..."></textarea>
+
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                 <button onclick="markKnown()">✅ 熟（已掌握）</button>
                 <button class="danger" onclick="markUnknown()">❌ 生（需复习）</button>
@@ -302,7 +330,6 @@
                 <div class="info-item"><span class="label">释义：</span><span id="spellMeaning">-</span></div>
             </div>
 
-            <!-- 答案提示框 -->
             <div class="spell-tip" id="spellTip">请输入答案</div>
 
             <input type="text" class="spell-input" id="spellInput" placeholder="请输入单词..." autocomplete="off">
@@ -359,7 +386,21 @@ let G = {
   studyBatch: [], currentIndex: 0
 };
 
-// 🔥 升级存储结构：支持艾宾浩斯复习（本地时间）
+// 10条随机标语
+const SLOGANS = [
+  "背一个单词，存一笔财富 🤑",
+  "每日记一词，财富积少成多 ✨",
+  "日语进步一点点，资产增长一大步 📈",
+  "单词不白背，每一个都算数 💰",
+  "坚持学日语，知识财富双丰收 🎯",
+  "今日背单词，明日多份底气 💪",
+  "词汇量上涨，小金库也上涨 📊",
+  "用心记单词，用财犒劳自己 🎁",
+  "每一个日语词，都是你的资产 🪙",
+  "日积月累，日语与财富皆可期 🌱"
+];
+
+// 🔥 升级存储结构：支持艾宾浩斯复习+单词笔记
 let USER = JSON.parse(localStorage.getItem("jpStudy") || `{
   "learned":{}, "total":0, "today":0, "streak":0, "last":"", "cal":{}
 }`);
@@ -378,6 +419,45 @@ function getFutureDate(days) {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d.toISOString().split('T')[0];
+}
+
+// ==========================
+// 随机显示标语
+// ==========================
+function randomSlogan() {
+  const index = Math.floor(Math.random() * SLOGANS.length);
+  document.getElementById("slogan").textContent = SLOGANS[index];
+}
+
+// ==========================
+// 统计当前单词本已学数量
+// ==========================
+function getLearnedCount() {
+  if(!G.currentBook) return 0;
+  const bookWords = WORD_BANK[G.currentBook].map(item => item.word);
+  return Object.keys(USER.learned).filter(w => bookWords.includes(w)).length;
+}
+
+// ==========================
+// 更新学习页进度标题
+// ==========================
+function updateStudyTitle() {
+  const total = WORD_BANK[G.currentBook]?.length || 0;
+  const learned = getLearnedCount();
+  document.getElementById("studyTitle").textContent = `学习中 ${learned}/${total}`;
+}
+
+// ==========================
+// 保存单词笔记
+// ==========================
+function saveNote() {
+  if(!currentItem) return;
+  const w = currentItem.word;
+  const note = document.getElementById("wordNote").value;
+  if(USER.learned[w]) {
+    USER.learned[w].note = note;
+    save();
+  }
 }
 
 // ==========================
@@ -400,6 +480,7 @@ async function loadAllJson() {
 // ==========================
 document.addEventListener("DOMContentLoaded", async () => {
   await loadAllJson();
+  randomSlogan();
   initStudyCalendar();
   updateUI();
   switchPage("homePage");
@@ -420,7 +501,7 @@ function selectBook(bk, name) {
 }
 
 // ==========================
-// 🔥 核心：艾宾浩斯复习逻辑 + 修复复习BUG
+// 🔥 核心：艾宾浩斯复习逻辑
 // ==========================
 function startStudy(mode) {
   const fullList = WORD_BANK[G.currentBook];
@@ -454,7 +535,6 @@ function startStudy(mode) {
     }
   }
 
-  // 随机取10个单词
   G.studyBatch = targetList.sort(() => Math.random() - 0.5).slice(0, CONFIG.BATCH_SIZE);
   G.currentIndex = 0;
   renderWord();
@@ -467,39 +547,45 @@ function renderWord() {
   document.getElementById("showWord").textContent = item.word;
   document.getElementById("p").textContent = item.reading;
   document.getElementById("m").textContent = item.meaning;
+  
+  // 加载单词笔记
+  const note = USER.learned[item.word]?.note || "";
+  document.getElementById("wordNote").value = note;
+  
+  // 更新进度标题
+  updateStudyTitle();
   document.getElementById("studyProgress").style.width = (G.currentIndex / G.studyBatch.length * 100) + "%";
 }
 
 // ==========================
-// 🔥 核心：学习/复习 保存艾宾浩斯规则
+// 🔥 核心：艾宾浩斯学习逻辑
 // ==========================
 function nextWord(ok) {
   const w = G.studyBatch[G.currentIndex].word;
   const today = getToday();
 
-  // 首次学习：初始化艾宾浩斯数据
+  // 首次学习：初始化数据
   if (!USER.learned[w]) {
     USER.learned[w] = {
       status: ok ? 1 : 0,
       learnDate: today,
-      nextReview: getFutureDate(1), // 新单词：1天后复习
-      reviewCount: 0
+      nextReview: getFutureDate(1),
+      reviewCount: 0,
+      note: ""
     };
     USER.total++;
     USER.today++;
     USER.cal[today] = (USER.cal[today] || 0) + 1;
   } else {
-    // 复习中：更新艾宾浩斯时间
+    // 复习中：更新复习时间
     const word = USER.learned[w];
     word.status = ok ? 1 : 0;
     
     if (ok) {
-      // 答对：升级复习间隔
       word.reviewCount++;
       if (word.reviewCount === 1) word.nextReview = getFutureDate(3);
       else if (word.reviewCount >= 2) word.nextReview = getFutureDate(7);
     } else {
-      // 答错：重置为1天后复习
       word.reviewCount = 0;
       word.nextReview = getFutureDate(1);
     }
@@ -517,7 +603,7 @@ function nextWord(ok) {
 }
 
 // ==========================
-// 标记掌握/未掌握（立即生效）
+// 标记掌握/未掌握
 // ==========================
 function markKnown() {
   if(!currentItem) return;
@@ -574,7 +660,6 @@ function renderSpellWord() {
   document.getElementById("spellProgress").style.width = (spellIndex / spellBatch.length * 100) + "%";
 }
 
-// 拼写检查（汉字/假名均可）
 function checkSpell() {
   const input = document.getElementById("spellInput").value.trim();
   const item = spellBatch[spellIndex];
@@ -665,6 +750,8 @@ function resetData() {
 function switchPage(id) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  // 返回首页随机换标语
+  if(id === "homePage") randomSlogan();
 }
 
 // 提示框
