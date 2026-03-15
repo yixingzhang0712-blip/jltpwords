@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>日语单词攒钱计划</title>
+    <title>阿文的日语小站</title>
     <style>
         :root {
             --primary: #2A6F97;
@@ -33,6 +33,7 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
+            align-items: center;
         }
 
         .page { display: none; width: 100%; animation: fadeIn 0.3s ease; }
@@ -45,33 +46,38 @@
             padding: 25px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             margin-bottom: 20px;
+            width: 100%;
         }
 
         h1, h2 { color: var(--primary); text-align: center; margin-top: 0; }
         .slogan { font-size: 14px; color: #666; text-align: center; margin-bottom: 30px; }
 
+        /* 🔥 首页按钮优化：统一缩短宽度，居中更清爽 */
         button {
             background: var(--secondary);
             color: white;
             border: none;
-            padding: 16px;
+            padding: 14px;
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.2s;
-            margin-bottom: 12px;
+            margin: 0 auto 10px;
             width: 100%;
+            max-width: 320px;
+            display: block;
         }
         button:active { transform: scale(0.98); opacity: 0.9; }
         button.outline { background: transparent; border: 2px solid var(--secondary); color: var(--secondary); }
         button.danger { background: var(--danger); }
         button:disabled { background: #ccc; cursor: not-allowed; }
-        .voice-btn { background: #599d6a; margin-top: 8px; }
+        .voice-btn { background: #599d6a; margin-top: 8px; font-size: 14px; padding: 10px; }
 
+        /* 🔥 学习界面UI优化：单词字号/图标统一 */
         .word-display {
-            font-size: 32px; font-weight: bold; color: var(--primary);
-            text-align: center; margin: 20px 0; cursor: pointer;
+            font-size: 28px; font-weight: bold; color: var(--primary);
+            text-align: center; margin: 18px 0;
         }
         .word-info { font-size: 15px; color: #555; border-top: 1px solid #eee; padding-top: 15px; }
         .info-item { margin-bottom: 8px; }
@@ -99,7 +105,6 @@
             font-weight: bold;
             margin-bottom: 5px;
         }
-        /* 笔记保存按钮样式 */
         .note-save-btn {
             padding: 10px;
             font-size: 14px;
@@ -115,7 +120,7 @@
         .stat-val { font-size: 20px; font-weight: bold; color: var(--primary); }
         .stat-lbl { font-size: 12px; color: #888; }
 
-        /* 真实日历 + 星期抬头 */
+        /* 学习日历优化 + 点击效果 */
         .calendar-header {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -141,12 +146,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
         }
+        .cal-day:hover { opacity: 0.8; }
         .cal-active-1 { background: #c8e6c9; }
         .cal-active-2 { background: #81c784; }
         .cal-active-3 { background: #4caf50; color: white; }
         .cal-today { border: 2px solid var(--primary); }
-        .cal-empty { background: transparent; }
+        .cal-empty { background: transparent; cursor: default; }
 
         .loading, .error { text-align: center; padding: 20px; font-size: 16px; }
         .error { color: var(--danger); }
@@ -174,7 +182,7 @@
         }
 
         .spell-tip {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             text-align: center;
             padding: 12px;
@@ -196,6 +204,7 @@
             border: 2px solid var(--danger);
         }
 
+        /* 全局提示框 */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -211,6 +220,24 @@
             transition: all 0.3s;
         }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* 日历详情弹窗 */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; opacity: 0; pointer-events: none;
+            transition: 0.3s;
+        }
+        .modal.show { opacity: 1; pointer-events: all; }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            width: 80%; max-width: 300px;
+            text-align: center;
+        }
 
         .book-selector { margin: 20px 0; }
         .book-title { text-align: center; font-size: 16px; color: var(--primary); margin-bottom: 10px; }
@@ -232,6 +259,7 @@
             font-size: 16px;
             padding: 8px;
             width: auto;
+            max-width: none;
         }
         
         .summary-item {
@@ -243,7 +271,7 @@
         .summary-meaning { color: #555; margin-left: 8px; }
         .summary-list { max-height: 60vh; overflow-y: auto; margin-bottom: 20px; }
 
-        /* 🔥 优化三按钮样式：缩小尺寸+精简UI */
+        /* 三按钮精简UI */
         .mini-btn {
             padding: 10px !important;
             font-size: 14px !important;
@@ -253,16 +281,25 @@
 </head>
 <body>
 
+<!-- 日历详情弹窗 -->
+<div class="modal" id="dateModal">
+    <div class="modal-content">
+        <h3 id="modalDate">日期</h3>
+        <p id="modalDesc" style="font-size:16px; margin:10px 0;">学习：0 词</p>
+        <button onclick="closeModal()">确定</button>
+    </div>
+</div>
+
 <div class="container">
     <!-- 1. 加载页 -->
     <div id="loadingPage" class="page active">
         <div class="loading">正在加载词库...</div>
     </div>
 
-    <!-- 2. 首页 -->
+    <!-- 2. 首页 🔥 文案修改：阿文的日语小站 + 小金库 -->
     <div id="homePage" class="page">
         <div class="card">
-            <h1>日语单词攒钱计划</h1>
+            <h1>阿文的日语小站</h1>
             <p class="slogan" id="slogan">背一个单词，存一笔财富 🤑</p>
             <div class="book-selector">
                 <div class="book-title">📚 选择单词本</div>
@@ -277,7 +314,7 @@
             </div>
             <button id="btnStudyNew" disabled onclick="startStudy('new')">📖 学习新单词</button>
             <button id="btnStudyReview" disabled onclick="startStudy('review')">🔁 艾宾浩斯复习</button>
-            <button class="danger" onclick="switchPage('statsPage')">💰 攒钱进度</button>
+            <button class="danger" onclick="switchPage('statsPage')">💰 小金库</button>
         </div>
     </div>
 
@@ -290,18 +327,16 @@
             </div>
             <div class="progress-bar"><div class="progress-fill" id="studyProgress"></div></div>
             <div class="word-display" id="showWord" onclick="speakWord()"></div>
-            <button class="voice-btn" onclick="speakWord()">🔊 播放单词发音</button>
+            <button class="voice-btn" onclick="speakWord()">🔊 播放发音</button>
             <div class="word-info">
                 <div class="info-item"><span class="label">发音：</span><span id="p">-</span></div>
                 <div class="info-item"><span class="label">释义：</span><span id="m">-</span></div>
             </div>
 
-            <!-- 单词笔记 + 手动保存按钮 -->
-            <div class="note-label">📝 单词笔记（例句/搭配）</div>
-            <textarea class="note-area" id="wordNote" placeholder="在这里记录单词搭配、例句、语法笔记..."></textarea>
+            <div class="note-label">📝 单词笔记</div>
+            <textarea class="note-area" id="wordNote" placeholder="记录搭配、例句、笔记..."></textarea>
             <button class="note-save-btn" onclick="saveNoteManual()">💾 保存笔记</button>
 
-            <!-- 🔥 优化版三按钮：上一词/熟/生 + 缩小尺寸 -->
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
                 <button class="outline mini-btn" onclick="prevWord()">上一词</button>
                 <button class="mini-btn" onclick="markKnown()">熟</button>
@@ -358,7 +393,7 @@
     <!-- 7. 统计页 -->
     <div id="statsPage" class="page">
         <div class="card">
-            <h2>💰 我的攒钱进度</h2>
+            <h2>💰 我的小金库</h2>
             <div class="stat-grid">
                 <div class="stat-box"><div class="stat-val" id="money">0</div><div class="stat-lbl">累计金额(元)</div></div>
                 <div class="stat-box"><div class="stat-val" id="total">0</div><div class="stat-lbl">累计单词</div></div>
@@ -366,7 +401,7 @@
                 <div class="stat-box"><div class="stat-val" id="streak">0</div><div class="stat-lbl">连续天数</div></div>
             </div>
 
-            <h3 style="font-size:16px;">📅 学习日历</h3>
+            <h3 style="font-size:16px;">📅 学习日历（点击查看详情）</h3>
             <div class="calendar-header">
                 <div class="weekday">一</div>
                 <div class="weekday">二</div>
@@ -403,7 +438,7 @@ let G = {
   studyBatch: [], currentIndex: 0
 };
 
-// 10条随机标语
+// 随机标语
 const SLOGANS = [
   "背一个单词，存一笔财富 🤑",
   "每日记一词，财富积少成多 ✨",
@@ -417,10 +452,40 @@ const SLOGANS = [
   "日积月累，日语与财富皆可期 🌱"
 ];
 
+// 🔥 学习激励语（50/100词各10条）
+const MOTIVATION_50 = [
+  "🎉 太棒了！今日突破50词，日语力暴涨！",
+  "✨ 50词达成！你的坚持超耀眼！",
+  "💪 完成50词挑战，离大神又近一步！",
+  "🌟 累计50词，知识财富双丰收！",
+  "🚀 50词打卡成功，继续保持！",
+  "🎯 今日50词达成，努力终有回报！",
+  "🌈 超厉害！50词轻松拿下！",
+  "💎 50词积累，成就更好的自己！",
+  "🏆 突破50词，你就是最棒的！",
+  "🌱 日积月累，50词只是开始！"
+];
+const MOTIVATION_100 = [
+  "🏅 封神！今日100词达成！快休息一下吧~",
+  "🔥 100词里程碑！你真的太努力了！",
+  "😎 学霸认证！100词完成，奖励自己休息片刻！",
+  "🌟 100词达成！你的毅力令人佩服！",
+  "🎉 突破100词！适当休息，效率更高！",
+  "💪 100词打卡！你已经超越了绝大多数人！",
+  "🚀 100词成就解锁！记得劳逸结合哦！",
+  "🎊 满分表现！100词完成，休息一下吧！",
+  "🏆 日语大神！100词达成，注意休息~",
+  "✨ 100词达成！今天的努力值得骄傲！"
+];
+
 // 存储结构
 let USER = JSON.parse(localStorage.getItem("jpStudy") || `{
   "learned":{}, "total":0, "today":0, "streak":0, "last":"", "cal":{}
 }`);
+
+// 激励标记：防止重复弹窗
+let hasMotivation50 = false;
+let hasMotivation100 = false;
 
 // ==========================
 // 工具函数
@@ -449,14 +514,32 @@ function updateStudyTitle() {
 }
 
 // ==========================
-// 🔥 手动保存笔记（核心修复）
+// 🔥 学习激励弹窗
+// ==========================
+function checkMotivation() {
+  const todayCount = USER.today;
+  // 50词激励
+  if(todayCount >=50 && !hasMotivation50) {
+    hasMotivation50 = true;
+    const msg = MOTIVATION_50[Math.floor(Math.random()*MOTIVATION_50.length)];
+    showToast(msg);
+  }
+  // 100词激励 + 休息提示
+  if(todayCount >=100 && !hasMotivation100) {
+    hasMotivation100 = true;
+    const msg = MOTIVATION_100[Math.floor(Math.random()*MOTIVATION_100.length)];
+    showToast(msg);
+  }
+}
+
+// ==========================
+// 🔥 手动保存笔记
 // ==========================
 function saveNoteManual() {
   if(!currentItem) return;
   const w = currentItem.word;
   const note = document.getElementById("wordNote").value;
   
-  // 初始化单词数据（防止未学习就保存笔记）
   if (!USER.learned[w]) {
     USER.learned[w] = {
       status: 0, learnDate: getToday(), nextReview: getFutureDate(1), reviewCount: 0, note: note
@@ -467,8 +550,20 @@ function saveNoteManual() {
   
   save();
   showToast("✅ 笔记保存成功！");
-  // 刷新当前单词，确认保存
   renderWord();
+}
+
+// ==========================
+// 🔥 日历弹窗功能
+// ==========================
+function openModal(dateStr) {
+  const count = USER.cal[dateStr] || 0;
+  document.getElementById("modalDate").textContent = dateStr;
+  document.getElementById("modalDesc").textContent = `学习：${count} 词`;
+  document.getElementById("dateModal").classList.add("show");
+}
+function closeModal() {
+  document.getElementById("dateModal").classList.remove("show");
 }
 
 // ==========================
@@ -495,6 +590,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   initStudyCalendar();
   updateUI();
   switchPage("homePage");
+  
+  // 重置每日激励标记
+  const lastDate = USER.last || "";
+  if(lastDate !== getToday()) {
+    hasMotivation50 = false;
+    hasMotivation100 = false;
+    USER.last = getToday();
+    save();
+  }
 });
 
 // ==========================
@@ -567,7 +671,6 @@ function renderWord() {
   document.getElementById("p").textContent = item.reading;
   document.getElementById("m").textContent = item.meaning;
   
-  // 加载已保存的笔记
   const note = USER.learned[item.word]?.note || "";
   document.getElementById("wordNote").value = note;
   
@@ -608,8 +711,10 @@ function nextWord(ok) {
   }
 
   save();
+  // 触发激励判断
+  checkMotivation();
+  
   G.currentIndex++;
-
   if (G.currentIndex >= G.studyBatch.length) {
     showToast("🎉 本组单词学习完成");
     switchPage("selectPage");
@@ -695,7 +800,7 @@ function checkSpell() {
 }
 
 // ==========================
-// 学习日历/数据存储
+// 🔥 学习日历（支持点击）
 // ==========================
 function initStudyCalendar() {
   const cal = document.getElementById("studyCalendar");
@@ -724,9 +829,15 @@ function initStudyCalendar() {
     else if (cnt >= 5) el.classList.add("cal-active-2");
     else if (cnt >= 1) el.classList.add("cal-active-1");
 
+    // 点击查看详情
+    el.onclick = () => openModal(dateStr);
     cal.appendChild(el);
   }
 }
+
+// ==========================
+// 数据存储/更新
+// ==========================
 function save() {
   localStorage.setItem("jpStudy", JSON.stringify(USER));
   updateUI();
@@ -741,6 +852,8 @@ function updateUI() {
 function resetData() {
   if (confirm("确定重置？所有学习记录将清空！")) {
     USER = { learned: {}, total: 0, today: 0, streak: 0, last: "", cal: {} };
+    hasMotivation50 = false;
+    hasMotivation100 = false;
     save();
     showToast("✅ 数据已重置");
   }
@@ -754,7 +867,7 @@ function showToast(m) {
   const t = document.getElementById("toast");
   t.textContent = m;
   t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 1800);
+  setTimeout(() => t.classList.remove("show"), 2200);
 }
 
 // ==========================
