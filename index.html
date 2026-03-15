@@ -85,12 +85,38 @@
         .stat-val { font-size: 20px; font-weight: bold; color: var(--primary); }
         .stat-lbl { font-size: 12px; color: #888; }
 
-        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
-        .cal-day { aspect-ratio: 1; border-radius: 4px; background: #eef2ef; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+        /* 真实日历 + 星期抬头 */
+        .calendar-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+        .weekday {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .cal-day {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            background: #eef2ef;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .cal-active-1 { background: #c8e6c9; }
         .cal-active-2 { background: #81c784; }
         .cal-active-3 { background: #4caf50; color: white; }
         .cal-today { border: 2px solid var(--primary); }
+        .cal-empty { background: transparent; }
 
         .loading, .error { text-align: center; padding: 20px; font-size: 16px; }
         .error { color: var(--danger); }
@@ -155,652 +181,291 @@
             width: auto;
         }
         
-        /* 小结页面样式 */
         .summary-item {
             padding: 10px 0;
             border-bottom: 1px solid #eee;
         }
-        
-        /* 批量加载提示 */
-        .batch-loading {
-            text-align: center;
-            padding: 20px;
-            font-size: 16px;
-            color: var(--primary);
-        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div id="loadingPage" class="page active">
-            <div class="loading">正在加载词库...</div>
-        </div>
 
-        <div id="batchLoadingPage" class="page">
-            <div class="batch-loading">
-                <p>📚 首次加载，正在补充例句和搭配...</p>
-                <p id="batchProgress">进度：0/0</p>
+<div class="container">
+    <div id="loadingPage" class="page active">
+        <div class="loading">正在加载词库...</div>
+    </div>
+
+    <div id="homePage" class="page">
+        <div class="card">
+            <h1>日语单词攒钱计划</h1>
+            <p class="slogan">背一个单词，存一笔财富 🤑</p>
+            <div class="book-selector">
+                <div class="book-title">📚 选择单词本</div>
+                <div class="book-grid">
+                    <button class="book-btn" onclick="selectBook('n1','N1')">N1</button>
+                    <button class="book-btn" onclick="selectBook('n2','N2')">N2</button>
+                    <button class="book-btn" onclick="selectBook('n3','N3')">N3</button>
+                    <button class="book-btn" onclick="selectBook('n4','N4')">N4</button>
+                    <button class="book-btn" onclick="selectBook('n5','N5')">N5</button>
+                </div>
+                <div class="current-book" id="currentBookText">未选择单词本</div>
             </div>
-        </div>
-
-        <div id="homePage" class="page">
-            <div class="card">
-                <h1>日语单词攒钱计划</h1>
-                <p class="slogan">背一个单词，存一笔财富 🤑</p>
-
-                <div class="book-selector">
-                    <div class="book-title">📚 选择单词本</div>
-                    <div class="book-grid">
-                        <button class="book-btn" onclick="selectBook('n1','N1')">N1</button>
-                        <button class="book-btn" onclick="selectBook('n2','N2')">N2</button>
-                        <button class="book-btn" onclick="selectBook('n3','N3')">N3</button>
-                        <button class="book-btn" onclick="selectBook('n4','N4')">N4</button>
-                        <button class="book-btn" onclick="selectBook('n5','N5')">N5</button>
-                    </div>
-                    <div class="current-book" id="currentBookText">未选择单词本</div>
-                </div>
-
-                <button id="btnStudyNew" disabled onclick="startStudy('new')">📖 学习新单词</button>
-                <button id="btnStudyReview" disabled onclick="startStudy('review')">🔁 复习单词</button>
-                <button class="danger" onclick="switchPage('statsPage')">💰 攒钱进度</button>
-            </div>
-        </div>
-
-        <div id="studyPage" class="page">
-            <div class="card">
-                <div class="study-header">
-                    <button class="back-btn" onclick="switchPage('homePage')">← 返回</button>
-                    <h2 id="studyTitle">学习中</h2>
-                </div>
-                <div class="progress-bar"><div class="progress-fill" id="studyProgress"></div></div>
-                <div class="word-display" id="showWord" onclick="speakWord()"></div>
-                <button class="voice-btn" onclick="speakWord()">🔊 播放单词发音</button>
-                <button class="voice-btn outline" onclick="speakExample()">🔊 播放例句</button>
-                <div class="word-info">
-                    <div class="info-item"><span class="label">发音：</span><span id="p">-</span></div>
-                    <div class="info-item"><span class="label">释义：</span><span id="m">-</span></div>
-                    <div class="info-item"><span class="label">例句：</span><span id="e">-</span></div>
-                    <div class="info-item"><span class="label">搭配：</span><span id="c">-</span></div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <button onclick="markKnown()">✅ 熟</button>
-                    <button class="danger" onclick="markUnknown()">❌ 生</button>
-                </div>
-                <button onclick="nextWord(true)">记住了 ➜</button>
-                <button class="outline" onclick="nextWord(false)">记错了 🔄</button>
-            </div>
-        </div>
-
-        <div id="spellPage" class="page">
-            <div class="card">
-                <h2>✍️ 拼写练习</h2>
-                <div class="progress-bar"><div class="progress-fill" id="spellProgress"></div></div>
-                <div class="spell-hint">
-                    <p>输入汉字/假名都算对</p>
-                    <p id="spellWordInfo"></p>
-                </div>
-                <input class="spell-input" id="spellInput" placeholder="输入单词">
-                <button onclick="checkSpell()">提交答案</button>
-                <button class="outline" onclick="switchPage('homePage')">返回</button>
-            </div>
-        </div>
-
-        <div id="summaryPage" class="page">
-            <div class="card">
-                <h2>📝 本组单词小结</h2>
-                <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
-                <div id="summaryList" style="max-height: 300px; overflow-y: auto; margin: 20px 0;">
-                    <!-- 单词列表动态生成 -->
-                </div>
-                <button onclick="switchPage('homePage')">返回首页</button>
-                <button class="outline" onclick="startSpell()">切换到拼写测试</button>
-            </div>
-        </div>
-
-        <div id="statsPage" class="page">
-            <div class="card">
-                <h2>💰 我的攒钱进度</h2>
-                <div class="stat-grid">
-                    <div class="stat-box"><div class="stat-val" id="money">0</div><div class="stat-lbl">累计金额(元)</div></div>
-                    <div class="stat-box"><div class="stat-val" id="total">0</div><div class="stat-lbl">累计单词</div></div>
-                    <div class="stat-box"><div class="stat-val" id="today">0</div><div class="stat-lbl">今日学习</div></div>
-                    <div class="stat-box"><div class="stat-val" id="streak">0</div><div class="stat-lbl">连续天数</div></div>
-                </div>
-                <h3 style="font-size:16px;">📅 学习日历</h3>
-                <div class="calendar" id="studyCalendar"></div>
-                <button onclick="switchPage('homePage')">返回</button>
-                <button class="danger" onclick="resetData()">重置数据</button>
-            </div>
+            <button id="btnStudyNew" disabled onclick="startStudy('new')">📖 学习新单词</button>
+            <button id="btnStudyReview" disabled onclick="startStudy('review')">🔁 复习单词</button>
+            <button class="danger" onclick="switchPage('statsPage')">💰 攒钱进度</button>
         </div>
     </div>
-    <div class="toast" id="toast"></div>
+
+    <div id="studyPage" class="page">
+        <div class="card">
+            <div class="study-header">
+                <button class="back-btn" onclick="switchPage('homePage')">← 返回</button>
+                <h2 id="studyTitle">学习中</h2>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="studyProgress"></div></div>
+            <div class="word-display" id="showWord" onclick="speakWord()"></div>
+            <button class="voice-btn" onclick="speakWord()">🔊 播放单词发音</button>
+            <div class="word-info">
+                <div class="info-item"><span class="label">发音：</span><span id="p">-</span></div>
+                <div class="info-item"><span class="label">释义：</span><span id="m">-</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <button onclick="markKnown()">✅ 熟</button>
+                <button class="danger" onclick="markUnknown()">❌ 生</button>
+            </div>
+            <button onclick="nextWord(true)">记住了 ➜</button>
+            <button class="outline" onclick="nextWord(false)">记错了 🔄</button>
+        </div>
+    </div>
+
+    <div id="statsPage" class="page">
+        <div class="card">
+            <h2>💰 我的攒钱进度</h2>
+            <div class="stat-grid">
+                <div class="stat-box"><div class="stat-val" id="money">0</div><div class="stat-lbl">累计金额(元)</div></div>
+                <div class="stat-box"><div class="stat-val" id="total">0</div><div class="stat-lbl">累计单词</div></div>
+                <div class="stat-box"><div class="stat-val" id="today">0</div><div class="stat-lbl">今日学习</div></div>
+                <div class="stat-box"><div class="stat-val" id="streak">0</div><div class="stat-lbl">连续天数</div></div>
+            </div>
+
+            <h3 style="font-size:16px;">📅 学习日历</h3>
+            <!-- 星期抬头（真实：一 二 三 四 五 六 日）-->
+            <div class="calendar-header">
+                <div class="weekday">一</div>
+                <div class="weekday">二</div>
+                <div class="weekday">三</div>
+                <div class="weekday">四</div>
+                <div class="weekday">五</div>
+                <div class="weekday">六</div>
+                <div class="weekday">日</div>
+            </div>
+            <div class="calendar" id="studyCalendar"></div>
+
+            <button onclick="switchPage('homePage')">返回</button>
+            <button class="danger" onclick="resetData()">重置数据</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 // ==========================
-// 核心配置
+// 配置：纯读取 JSON
 // ==========================
 let japaneseVoice = null;
 let currentItem = null;
-let spellWrongWords = []; 
-const CONFIG = { 
-    BATCH_SIZE: 5, 
-    MONEY_PER_WORD: 0.1,
-    CACHE_KEY: "jpWordData", // 本地缓存键名（存储单词完整信息）
-    CSV_COLUMNS: { // CSV列名映射（可根据你的CSV调整）
-        word: "word",    // 单词列名
-        reading: "reading", // 假名列名
-        meaning: "meaning"  // 释义列名
-    }
-};
-
-// ==========================
-// 日语发音功能（保留）
-// ==========================
-function loadVoices() {
-  const voices = speechSynthesis.getVoices();
-  japaneseVoice = voices.find(v => 
-    v.lang === 'ja-JP' && 
-    (v.name.includes('Google') && v.name.toLowerCase().includes('female'))
-  ) || voices.find(v => v.name.includes('Google') && v.lang === 'ja-JP') || voices.find(v => v.lang === 'ja-JP');
-  
-  if (japaneseVoice) {
-    console.log('已加载语音：', japaneseVoice.name);
-  } else {
-    console.log('未找到日语语音，请检查浏览器语言设置');
-  }
-}
-
-speechSynthesis.onvoiceschanged = loadVoices;
-window.addEventListener('load', () => setTimeout(loadVoices, 300));
-
-function speak(text) {
-  if (!japaneseVoice) {
-    alert('语音未加载，请稍等或检查浏览器是否支持日语语音');
-    return;
-  }
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.voice = japaneseVoice;
-  u.lang = 'ja-JP';
-  u.rate = 0.92;
-  u.pitch = 1.05;
-  u.volume = 1.0;
-  speechSynthesis.speak(u);
-}
-
-function speakWord() {
-  if (!currentItem) return;
-  speak(currentItem.word);
-}
-
-function speakExample() {
-  if (!currentItem || !currentItem.info) return;
-  const pureJapaneseExample = currentItem.info.example.split("（")[0].trim();
-  speak(pureJapaneseExample);
-}
-
-// ==========================
-// 数据存储结构（升级：支持CSV数据）
-// ==========================
-// WORD_BANK：存储CSV读取的基础数据 {n1: [{word, reading, meaning}, ...], ...}
+const CONFIG = { BATCH_SIZE: 5, MONEY_PER_WORD: 0.1 };
 const WORD_BANK = { n1:[], n2:[], n3:[], n4:[], n5:[] };
-// WORD_DATA_CACHE：存储完整数据（基础数据+例句+搭配）
-const WORD_DATA_CACHE = JSON.parse(localStorage.getItem(CONFIG.CACHE_KEY) || '{}');
-// 用户学习数据（保留攒钱、日历、复习等功能）
+
 let G = {
   currentBook: "", currentBookName: "",
-  studyBatch: [], currentIndex: 0,
-  spellList: [], spellIndex: 0,
-  user: JSON.parse(localStorage.getItem("jpStudy") || '{"learned":{},"total":0,"today":0,"streak":0,"last":"","cal":{}}')
+  studyBatch: [], currentIndex: 0
 };
 
+let USER = JSON.parse(localStorage.getItem("jpStudy") || `{
+  "learned":{}, "total":0, "today":0, "streak":0, "last":"", "cal":{}
+}`);
+
 // ==========================
-// 核心：读取CSV词库 + 补全例句/搭配
+// 加载 JSON 词库
 // ==========================
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    // 1. 读取所有等级的CSV词库
-    await loadAllCsvBooks();
-    // 2. 检查缓存：仅补全缺失的例句/搭配
-    if (!hasCompleteCache()) {
-      switchPage("batchLoadingPage");
-      await batchFetchWordData();
-      localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify(WORD_DATA_CACHE));
+async function loadAllJson() {
+  for (let i = 1; i <= 5; i++) {
+    const level = `n${i}`;
+    try {
+      const res = await fetch(`./${level}.json`);
+      WORD_BANK[level] = await res.json();
+      console.log(`${level} 加载完成：${WORD_BANK[level].length} 词`);
+    } catch (e) {
+      WORD_BANK[level] = [];
     }
-    // 3. 初始化学习日历（新增：补全日历功能）
-    initStudyCalendar();
-    // 4. 进入首页
-    switchPage("homePage");
-    updateUI();
-  } catch (e) {
-    console.error("初始化失败：", e);
-    document.getElementById("loadingPage").innerHTML = `<div class="error">❌ 词库加载失败，请检查CSV文件</div>`;
   }
+}
+
+// ==========================
+// 初始化
+// ==========================
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadAllJson();
+  initStudyCalendar();
+  updateUI();
+  switchPage("homePage");
 });
 
-// 读取CSV文件（核心改动：替换TXT为CSV）
-async function loadAllCsvBooks() {
-  // CSV解析工具函数（纯前端解析CSV）
-  function parseCsv(csvText) {
-    const lines = csvText.split('\n').map(line => line.trim()).filter(line => line);
-    const headers = lines[0].split(',').map(h => h.trim());
-    const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
-      const row = {};
-      headers.forEach((h, idx) => row[h] = values[idx] || "");
-      rows.push(row);
-    }
-    return rows;
-  }
-
-  // 读取N1-N5的CSV文件（文件命名：n1.csv, n2.csv...）
-  for(let i=1; i<=5; i++) {
-    const key = `n${i}`;
-    try {
-      const response = await fetch(`${key}.csv`);
-      if (!response.ok) throw new Error(`无法读取${key}.csv`);
-      const csvText = await response.text();
-      const csvData = parseCsv(csvText);
-      // 映射CSV列到标准结构
-      WORD_BANK[key] = csvData.map(row => ({
-        word: row[CONFIG.CSV_COLUMNS.word] || "",
-        reading: row[CONFIG.CSV_COLUMNS.reading] || "",
-        meaning: row[CONFIG.CSV_COLUMNS.meaning] || ""
-      })).filter(item => item.word); // 过滤空单词
-      console.log(`${key}词库加载完成，共${WORD_BANK[key].length}个单词`);
-    } catch (e) {
-      console.warn(`${key}词库加载失败：`, e);
-      WORD_BANK[key] = [];
-    }
-  }
-}
-
-// 检查缓存完整性（仅检查例句/搭配是否存在）
-function hasCompleteCache() {
-  for (let i=1; i<=5; i++) {
-    const key = `n${i}`;
-    const words = WORD_BANK[key];
-    if (words.length === 0) continue;
-    for (const item of words) {
-      const cacheData = WORD_DATA_CACHE[item.word];
-      // 缓存不存在 或 缺少例句/搭配 → 需要补全
-      if (!cacheData || !cacheData.example || !cacheData.collocation) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// 批量补全例句/搭配（优先用CSV已有数据，仅调用API补全例句/搭配）
-async function batchFetchWordData() {
-  let total = 0;
-  let completed = 0;
-
-  // 统计总单词数
-  for (let i=1; i<=5; i++) {
-    total += WORD_BANK[`n${i}`].length;
-  }
-
-  // 批量处理每个单词
-  for (let i=1; i<=5; i++) {
-    const key = `n${i}`;
-    const words = WORD_BANK[key];
-    
-    for (const item of words) {
-      const word = item.word;
-      // 缓存已存在且完整 → 跳过
-      if (WORD_DATA_CACHE[word] && WORD_DATA_CACHE[word].example && WORD_DATA_CACHE[word].collocation) {
-        completed++;
-        updateBatchProgress(completed, total);
-        continue;
-      }
-
-      // 基础数据（来自CSV）
-      const baseData = {
-        reading: item.reading || word,
-        meaning: item.meaning || "无释义",
-        example: "",
-        collocation: ""
-      };
-
-      try {
-        // 调用API仅补全例句/搭配
-        const res = await fetch(`https://api.jisho.org/v1/search/words?keyword=${encodeURIComponent(word)}`);
-        const data = await res.json();
-        const { example, collocation } = parseJishoData(data, word);
-        baseData.example = example;
-        baseData.collocation = collocation;
-      } catch (e) {
-        // API调用失败 → 兜底数据
-        baseData.example = `${word} は ${baseData.reading} です。（${word} 是 ${baseData.meaning}。）`;
-        baseData.collocation = "无常用搭配";
-      }
-
-      // 保存到缓存
-      WORD_DATA_CACHE[word] = baseData;
-      completed++;
-      updateBatchProgress(completed, total);
-      // 延迟避免限流
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-  }
-}
-
-// 解析Jisho API数据（仅提取例句/搭配）
-function parseJishoData(data, word) {
-  let example = "";
-  let collocation = "";
-
-  if (data.data && data.data.length > 0) {
-    const exactMatch = data.data.find(item => 
-      item.japanese.some(j => j.word === word || j.reading === word)
-    ) || data.data[0];
-
-    // 解析例句
-    const examples = exactMatch.senses?.flatMap(s => 
-      s.examples?.map(e => e.japanese) || []
-    ).filter(Boolean);
-    if (examples.length) {
-      example = examples[0];
-      // 补充中文翻译
-      if (exactMatch.senses[0]?.examples?.[0]?.english) {
-        example += `（${exactMatch.senses[0].examples[0].english[0]}）`;
-      }
-    }
-
-    // 解析搭配
-    const collocations = exactMatch.senses?.flatMap(s => 
-      s.part_of_speech || []
-    ).filter(Boolean);
-    collocation = collocations.length ? collocations.join("；") : "";
-  }
-
-  // 兜底
-  if (!example) example = `${word} は ${word} です。（使用${word}的句子。）`;
-  if (!collocation) collocation = "无常用搭配";
-
-  return { example, collocation };
-}
-
-// 更新批量加载进度
-function updateBatchProgress(completed, total) {
-  document.getElementById("batchProgress").textContent = `进度：${completed}/${total}`;
-}
-
-// ==========================
-// 学习/复习/攒钱/日历核心功能（保留+优化）
 // ==========================
 // 选择单词本
-function selectBook(bk,name){
+// ==========================
+function selectBook(bk, name) {
   G.currentBook = bk;
   G.currentBookName = name;
   document.getElementById("currentBookText").textContent = "当前：" + name;
-  document.querySelectorAll(".book-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".book-btn").forEach(x => x.classList.remove("active"));
   event.target.classList.add("active");
   document.getElementById("btnStudyNew").disabled = false;
   document.getElementById("btnStudyReview").disabled = false;
-  showToast("✅ 已选择："+name);
+  showToast("✅ 已选择：" + name);
 }
 
-// 开始学习（支持复习模式：优先展示未掌握单词）
-function startStudy(mode){
+// ==========================
+// 开始学习
+// ==========================
+function startStudy(mode) {
   const list = WORD_BANK[G.currentBook];
-  if(!list || list.length<1){ 
-    showToast("❌ 该等级单词库为空"); 
-    return; 
+  if (!list || list.length < 1) {
+    showToast("❌ 单词库为空");
+    return;
   }
-
-  // 复习模式：筛选未掌握单词
-  let studyList = [...list];
-  if (mode === "review") {
-    studyList = studyList.filter(item => !G.user.learned[item.word] || G.user.learned[item.word] === 0);
-    if (studyList.length === 0) {
-      showToast("🎉 暂无需要复习的单词！");
-      return;
-    }
-  }
-
-  // 随机抽取批量单词
-  G.studyBatch = studyList.sort(()=>Math.random()-0.5).slice(0, CONFIG.BATCH_SIZE);
+  G.studyBatch = list.sort(() => Math.random() - 0.5).slice(0, CONFIG.BATCH_SIZE);
   G.currentIndex = 0;
   renderWord();
   switchPage("studyPage");
 }
 
-// 渲染单词（使用CSV+缓存的完整数据）
-function renderWord(){
+function renderWord() {
   const item = G.studyBatch[G.currentIndex];
-  const word = item.word;
-  const wordData = WORD_DATA_CACHE[word] || {
-    reading: item.reading || word,
-    meaning: item.meaning || "无释义",
-    example: `${word} は ${item.reading || word} です。`,
-    collocation: "无常用搭配"
-  };
-  
-  currentItem = {
-    word: word,
-    info: wordData
-  };
-  
-  // 更新页面显示
-  document.getElementById("showWord").textContent = word;
-  document.getElementById("p").textContent = wordData.reading;
-  document.getElementById("m").textContent = wordData.meaning;
-  document.getElementById("e").textContent = wordData.example;
-  document.getElementById("c").textContent = wordData.collocation;
-  document.getElementById("studyProgress").style.width = (G.currentIndex/G.studyBatch.length*100)+"%";
+  currentItem = item;
+  document.getElementById("showWord").textContent = item.word;
+  document.getElementById("p").textContent = item.reading;
+  document.getElementById("m").textContent = item.meaning;
+  document.getElementById("studyProgress").style.width = (G.currentIndex / G.studyBatch.length * 100) + "%";
 }
 
-// 完成一组学习
-function finishBatch() {
-  // 更新连续学习天数（日历功能）
-  updateStudyStreak();
-  const choice = confirm("🎉 本组单词学习完成！\n请选择：\n【确定】→ 拼写测试\n【取消】→ 单词小结");
-  if (choice) {
-    startSpell();
-  } else {
-    showSummary();
-  }
-}
-
-// 下一个单词（更新学习数据+攒钱）
-function nextWord(ok){
-  const item = G.studyBatch[G.currentIndex];
-  const word = item.word;
-  // 记录学习状态：1=掌握，0=未掌握
-  if (!G.user.learned[word]) {
-    G.user.learned[word] = ok ? 1 : 0;
-    G.user.total++; // 累计单词数
-    G.user.today++; // 今日学习数
-    // 更新学习日历
+function nextWord(ok) {
+  const w = G.studyBatch[G.currentIndex].word;
+  if (!USER.learned[w]) {
+    USER.learned[w] = ok ? 1 : 0;
+    USER.total++;
+    USER.today++;
     const today = new Date().toISOString().split('T')[0];
-    G.user.cal[today] = (G.user.cal[today] || 0) + 1;
-    saveData();
+    USER.cal[today] = (USER.cal[today] || 0) + 1;
+    save();
   }
-  
   G.currentIndex++;
   if (G.currentIndex >= G.studyBatch.length) {
-    finishBatch();
+    showToast("🎉 本组学习完成");
+    switchPage("homePage");
     return;
   }
   renderWord();
 }
 
-// 拼写测试
-function startSpell() {
-  G.spellList = [...G.studyBatch, ...spellWrongWords];
-  G.spellIndex = 0;
-  spellWrongWords = [];
-  renderSpell();
-  switchPage("spellPage");
-}
-
-function renderSpell() {
-  if (G.spellIndex >= G.spellList.length) {
-    showToast("✅ 拼写测试通关！");
-    showSummary();
-    return;
-  }
-  const item = G.spellList[G.spellIndex];
-  const word = item.word;
-  const wordData = WORD_DATA_CACHE[word] || { reading: item.reading || word };
-  document.getElementById("spellWordInfo").innerHTML = `请拼写：${word}（发音：${wordData.reading}）`;
-  document.getElementById("spellInput").value = "";
-  document.getElementById("spellProgress").style.width = (G.spellIndex/G.spellList.length*100)+"%";
-}
-
-function checkSpell() {
-  const inputVal = document.getElementById("spellInput").value.trim();
-  const item = G.spellList[G.spellIndex];
-  const word = item.word;
-  const wordData = WORD_DATA_CACHE[word] || { reading: item.reading || word };
-  
-  // 匹配规则：输入等于单词或假名
-  if (inputVal === word || inputVal === wordData.reading) {
-    showToast("✅ 正确！");
-    G.spellIndex++;
-    renderSpell();
-  } else {
-    showToast(`❌ 错误，正确答案：${word}（发音：${wordData.reading}）`);
-    if (!spellWrongWords.includes(word)) {
-      spellWrongWords.push(word);
-    }
-    document.getElementById("spellInput").value = "";
-  }
-}
-
-// 单词小结
-function showSummary() {
-  const summaryList = document.getElementById("summaryList");
-  summaryList.innerHTML = "";
-  
-  G.studyBatch.forEach((item, index) => {
-    const word = item.word;
-    const wordData = WORD_DATA_CACHE[word] || {
-      reading: item.reading || word,
-      meaning: item.meaning || "无释义",
-      collocation: "无常用搭配"
-    };
-    
-    const summaryItem = document.createElement("div");
-    summaryItem.className = "summary-item";
-    summaryItem.innerHTML = `
-      <span style="font-weight: bold; color: var(--primary);">${index+1}. ${word}</span>
-      <span style="margin-left: 10px; color: #666;">${G.user.learned[word] ? "✅ 已掌握" : "🔄 需复习"}</span>
-      <br>
-      <span style="font-size: 14px;">发音：${wordData.reading} | 释义：${wordData.meaning}</span>
-      <br>
-      <span style="font-size: 12px; color: #888;">搭配：${wordData.collocation}</span>
-    `;
-    summaryList.appendChild(summaryItem);
-  });
-  
-  switchPage("summaryPage");
-}
-
 // ==========================
-// 攒钱+日历功能（新增/完善）
+// 真实日历（带星期、真实日期排列）
 // ==========================
-// 初始化学习日历
 function initStudyCalendar() {
-  const calendar = document.getElementById("studyCalendar");
-  calendar.innerHTML = "";
-  const today = new Date();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  
-  // 生成当月日历
+  const cal = document.getElementById("studyCalendar");
+  cal.innerHTML = "";
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const firstDay = new Date(year, month, 1).getDay() || 7; // 周一为1，周日为7
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // 填充前面空白
+  for (let i = 1; i < firstDay; i++) {
+    const el = document.createElement("div");
+    el.className = "cal-empty";
+    cal.appendChild(el);
+  }
+
+  // 填充日期
   for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const dayEl = document.createElement("div");
-    dayEl.className = "cal-day";
-    dayEl.textContent = day;
-    
-    // 标记今日
-    if (day === today.getDate()) {
-      dayEl.classList.add("cal-today");
-    }
-    
-    // 标记学习天数（根据学习数量分级）
-    const studyCount = G.user.cal[dateStr] || 0;
-    if (studyCount > 0) {
-      dayEl.classList.add(studyCount >= 10 ? "cal-active-3" : studyCount >= 5 ? "cal-active-2" : "cal-active-1");
-    }
-    
-    calendar.appendChild(dayEl);
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const el = document.createElement("div");
+    el.className = "cal-day";
+    el.textContent = day;
+
+    if (day === now.getDate()) el.classList.add("cal-today");
+    const cnt = USER.cal[dateStr] || 0;
+    if (cnt >= 10) el.classList.add("cal-active-3");
+    else if (cnt >= 5) el.classList.add("cal-active-2");
+    else if (cnt >= 1) el.classList.add("cal-active-1");
+
+    cal.appendChild(el);
   }
 }
 
-// 更新连续学习天数
-function updateStudyStreak() {
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-  
-  if (G.user.last === yesterday) {
-    G.user.streak++;
-  } else if (G.user.last !== today) {
-    G.user.streak = 1;
-  }
-  G.user.last = today;
-  saveData();
-}
-
 // ==========================
-// 辅助函数
+// 工具函数
 // ==========================
-// 保存用户数据
-function saveData() {
-  localStorage.setItem("jpStudy", JSON.stringify(G.user));
+function save() {
+  localStorage.setItem("jpStudy", JSON.stringify(USER));
   updateUI();
-  initStudyCalendar(); // 保存后更新日历
+  initStudyCalendar();
 }
 
-// 更新UI（攒钱、累计等）
 function updateUI() {
-  document.getElementById("money").textContent = (G.user.total * CONFIG.MONEY_PER_WORD).toFixed(1);
-  document.getElementById("total").textContent = G.user.total;
-  document.getElementById("today").textContent = G.user.today;
-  document.getElementById("streak").textContent = G.user.streak;
+  document.getElementById("money").textContent = (USER.total * CONFIG.MONEY_PER_WORD).toFixed(1);
+  document.getElementById("total").textContent = USER.total;
+  document.getElementById("today").textContent = USER.today;
+  document.getElementById("streak").textContent = USER.streak;
 }
 
-// 标记单词熟悉/陌生
-function markKnown(){ 
-  G.user.learned[G.studyBatch[G.currentIndex].word] = 1;
-  saveData();
-  showToast("✅ 标记为熟悉"); 
+function markKnown() {
+  USER.learned[currentItem.word] = 1; save(); showToast("✅ 已掌握");
 }
-function markUnknown(){ 
-  G.user.learned[G.studyBatch[G.currentIndex].word] = 0;
-  saveData();
-  showToast("🔄 标记为陌生"); 
+function markUnknown() {
+  USER.learned[currentItem.word] = 0; save(); showToast("🔄 需复习");
 }
-
-// 重置数据
-function resetData(){ 
-  if (confirm("确定重置所有学习数据？（词库缓存保留）")) {
-    G.user = {learned:{},total:0,today:0,streak:0,last:"",cal:{}};
-    saveData();
-    initStudyCalendar();
-    showToast("✅ 学习数据已重置");
+function resetData() {
+  if (confirm("确定重置？")) {
+    USER = { learned: {}, total: 0, today: 0, streak: 0, last: "", cal: {} };
+    save();
+    showToast("✅ 已重置");
   }
 }
 
-// 切换页面
-function switchPage(id){ 
-  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active")); 
-  document.getElementById(id).classList.add("active"); 
+function switchPage(id) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
-// 提示框
-function showToast(m){
-  const t=document.getElementById("toast");
-  t.textContent=m; 
+function showToast(m) {
+  const t = document.getElementById("toast");
+  t.textContent = m;
   t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),1800);
+  setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+// ==========================
+// 发音
+// ==========================
+function loadVoices() {
+  const voices = speechSynthesis.getVoices();
+  japaneseVoice = voices.find(v => v.lang === 'ja-JP') || voices[0];
+}
+window.addEventListener('load', () => {
+  speechSynthesis.onvoiceschanged = loadVoices;
+  setTimeout(loadVoices, 500);
+});
+
+function speakWord() {
+  if (!currentItem || !japaneseVoice) return;
+  const u = new SpeechSynthesisUtterance(currentItem.word);
+  u.voice = japaneseVoice;
+  u.lang = 'ja-JP';
+  u.rate = 0.9;
+  speechSynthesis.speak(u);
 }
 </script>
 </body>
