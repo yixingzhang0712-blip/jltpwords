@@ -27,6 +27,9 @@ button.danger{background:var(--danger)}
 .cal-today{border:3px solid var(--primary)}
 .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(42,111,56,0.9);color:white;padding:12px 24px;border-radius:999px;opacity:0;transition:all .3s}
 .toast.show{transform:translateX(-50%) translateY(-10px);opacity:1}
+.book-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.book-btn{background:#f0f8f2;border:1px solid #d5e9d9;color:var(--primary);padding:10px;border-radius:8px}
+.book-btn.active{background:var(--secondary);color:white}
 </style>
 </head>
 <body>
@@ -35,66 +38,82 @@ button.danger{background:var(--danger)}
   <div id="homePage" class="page active">
     <div class="card">
       <h1>日语单词攒钱计划</h1>
-      <button onclick="startStudy()">📖 开始学习新单词（10个一组）</button>
-      <button class="danger" onclick="showStatsPage()">💰 攒钱进度</button>
+      <p style="text-align:center;color:#666">10个单词 = 1元</p>
+      
+      <div class="book-grid">
+        <button class="book-btn" onclick="selectBook('n1','N1')">N1</button>
+        <button class="book-btn" onclick="selectBook('n2','N2')">N2</button>
+        <button class="book-btn" onclick="selectBook('n3','N3')">N3</button>
+        <button class="book-btn" onclick="selectBook('n4','N4')">N4</button>
+        <button class="book-btn" onclick="selectBook('n5','N5')">N5</button>
+      </div>
+      
+      <button id="btnNew" disabled onclick="startStudy('new')">📖 学习新单词</button>
+      <button id="btnReview" disabled onclick="startStudy('review')">🔁 复习单词</button>
+      <button class="danger" onclick="showStats()">💰 攒钱进度</button>
     </div>
   </div>
 
+  <!-- 学习页面 -->
   <div id="studyPage" class="page">
     <div class="card">
-      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-      <div class="word-display" id="wordDisplay" onclick="speakWord()"></div>
-      <button onclick="speakWord()">🔊 播放发音</button>
+      <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+      <div class="word-display" id="word"></div>
+      <button onclick="speak()">🔊 播放发音</button>
       <div class="word-info">
-        <div class="info-item"><span class="label">发音：</span><span id="reading">-</span></div>
-        <div class="info-item"><span class="label">释义：</span><span id="meaning">-</span></div>
-        <div class="info-item" onclick="editCollocation()"><span class="label">搭配：</span><span id="collocation">点击编辑</span></div>
+        <div><span class="label">发音：</span><span id="read">-</span></div>
+        <div><span class="label">释义：</span><span id="mean">-</span></div>
+        <div class="info-item" onclick="editPair()"><span class="label">搭配：</span><span id="pair">点击编辑搭配</span></div>
       </div>
-      <button onclick="markWord(true)">✅ 熟</button>
-      <button class="danger" onclick="markWord(false)">❌ 生</button>
+      <button onclick="mark(true)">✅ 熟</button>
+      <button class="danger" onclick="mark(false)">❌ 生</button>
     </div>
   </div>
 
+  <!-- 编辑搭配页面 -->
   <div id="editPage" class="page">
     <div class="card">
       <h2>编辑搭配</h2>
-      <textarea id="editInput" style="width:100%;height:120px;padding:10px"></textarea>
-      <button onclick="saveCollocation()">保存</button>
-      <button onclick="switchPage('studyPage')">取消</button>
+      <textarea id="pairInput" style="width:100%;height:120px;padding:10px"></textarea>
+      <button onclick="savePair()">保存</button>
+      <button onclick="backToStudy()">取消</button>
     </div>
   </div>
 
+  <!-- 完成页 -->
   <div id="finishPage" class="page">
     <div class="card">
       <h2>本组学习完成！</h2>
       <button onclick="startSpell()">进行拼写检查</button>
       <button onclick="showSummary()">查看学习小结</button>
-      <button onclick="switchPage('homePage')">返回主页</button>
+      <button onclick="backHome()">返回主页</button>
     </div>
   </div>
 
+  <!-- 拼写页面 -->
   <div id="spellPage" class="page">
     <div class="card">
       <div id="spellWord" style="font-size:28px;text-align:center;margin:20px 0"></div>
-      <input id="spellInput" class="spell-input" placeholder="输入假名或汉字">
+      <input id="spellInput" style="width:100%;padding:15px;font-size:18px;text-align:center;border:2px solid #ccc;border-radius:8px" placeholder="输入假名或汉字">
       <button onclick="checkSpell()">提交答案</button>
-      <div id="spellFeedback" style="margin-top:15px;min-height:28px"></div>
+      <div id="spellMsg" style="margin-top:15px;min-height:28px;text-align:center"></div>
     </div>
   </div>
 
+  <!-- 攒钱进度页 -->
   <div id="statsPage" class="page">
     <div class="card">
       <h2>💰 攒钱进度</h2>
       <div class="stat-grid">
         <div><div class="stat-val" id="todayWords">0</div><div>今日学习</div></div>
         <div><div class="stat-val" id="totalWords">0</div><div>累计单词</div></div>
-        <div><div class="stat-val" id="todayEarn">¥0</div><div>今日收益</div></div>
-        <div><div class="stat-val" id="totalEarn">¥0</div><div>总收益</div></div>
+        <div><div class="stat-val" id="todayMoney">¥0</div><div>今日收益</div></div>
+        <div><div class="stat-val" id="totalMoney">¥0</div><div>总收益</div></div>
       </div>
-      <h3>📅 本月日历</h3>
+      <h3>📅 本月学习日历</h3>
       <div class="calendar-header"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>
-      <div class="calendar" id="calendarGrid"></div>
-      <button onclick="switchPage('homePage')">返回</button>
+      <div class="calendar" id="calGrid"></div>
+      <button onclick="backHome()">返回主页</button>
     </div>
   </div>
 </div>
@@ -102,156 +121,180 @@ button.danger{background:var(--danger)}
 <div class="toast" id="toast"></div>
 
 <script>
-let currentBatch = [], currentIndex = 0;
-let spellQueue = [], spellAttempts = {};
-let japaneseVoice = null;
-let userData = JSON.parse(localStorage.getItem("jpMoney") || '{"learned":{},"collocations":{},"daily":{},"total":0}');
+// ================== 全局变量 ==================
+let WORD_BANK = {n1:[], n2:[], n3:[], n4:[], n5:[]};
+let currentBook = "";
+let batch = [], idx = 0;
+let spellQ = [], attempts = {};
+let voice = null;
+let data = JSON.parse(localStorage.getItem("jpMoney") || '{"learned":{},"collocations":{},"daily":{},"total":0}');
+const BATCH_SIZE = 10;
 
-const BATCH_SIZE = 10;           // ← 固定10个一组
-const MONEY_PER_10 = 1;          // 10个=1元
+// ================== 保存数据 ==================
+function save(){localStorage.setItem("jpMoney", JSON.stringify(data))}
 
-function saveData(){ localStorage.setItem("jpMoney", JSON.stringify(userData)); }
+// ================== Toast ==================
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800)}
 
-// ================== 发音（已完整修复）==================
-window.addEventListener('load', () => {
-  speechSynthesis.onvoiceschanged = () => {
-    japaneseVoice = speechSynthesis.getVoices().find(v => v.lang === 'ja-JP' && v.name.includes('Google')) || 
-                    speechSynthesis.getVoices().find(v => v.lang === 'ja-JP');
-  };
-  setTimeout(() => speechSynthesis.getVoices(), 300);
+// ================== 页面切换 ==================
+function page(id){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(id).classList.add("active")}
+
+// ================== 发音 ==================
+window.addEventListener('load',()=>{
+  speechSynthesis.onvoiceschanged = ()=>{voice = speechSynthesis.getVoices().find(v=>v.lang==='ja-JP')||speechSynthesis.getVoices()[0];};
+  setTimeout(()=>speechSynthesis.getVoices(),300);
 });
+function speak(){if(!batch[idx]||!voice)return;const u=new SpeechSynthesisUtterance(batch[idx].word);u.voice=voice;speechSynthesis.speak(u);}
 
-function speakWord(){
-  if(!currentBatch[currentIndex] || !japaneseVoice) return;
-  const u = new SpeechSynthesisUtterance(currentBatch[currentIndex].word);
-  u.voice = japaneseVoice;
-  u.rate = 0.92;
-  speechSynthesis.speak(u);
-}
-
-// ================== 学习流程 ==================
-function startStudy(){
-  // 这里用你自己的词库（示例数据，实际换成你的 n3.json）
-  currentBatch = [
-    {word:"食べる", reading:"たべる", meaning:"吃"},
-    {word:"行く", reading:"いく", meaning:"去"},
-    {word:"見る", reading:"みる", meaning:"看"},
-    // ... 把你的真实词库放这里，或用 fetch 加载 JSON
-  ].slice(0, BATCH_SIZE);
-  currentIndex = 0;
-  renderWord();
-  switchPage("studyPage");
-}
-
-function renderWord(){
-  const item = currentBatch[currentIndex];
-  document.getElementById("wordDisplay").textContent = item.word;
-  document.getElementById("reading").textContent = item.reading;
-  document.getElementById("meaning").textContent = item.meaning;
-  document.getElementById("collocation").textContent = userData.collocations[item.word] || "点击编辑搭配";
-  document.getElementById("progressFill").style.width = (currentIndex/BATCH_SIZE*100)+"%";
-}
-
-function markWord(known){
-  const w = currentBatch[currentIndex].word;
-  userData.learned[w] = known ? 1 : 0;
-  const today = new Date().toISOString().split('T')[0];
-  userData.daily[today] = (userData.daily[today]||0) + 1;
-  userData.total = (userData.total||0) + 1;
-  saveData();
-
-  currentIndex++;
-  if(currentIndex >= BATCH_SIZE){
-    switchPage("finishPage");
-  }else{
-    renderWord();
+// ================== 加载 JSON 词库 ==================
+async function loadAllJson(){
+  for(let i=1;i<=5;i++){
+    const level = `n${i}`;
+    try{
+      const res = await fetch(`./${level}.json`);
+      WORD_BANK[level] = await res.json();
+    }catch(e){WORD_BANK[level]=[];}
   }
+}
+
+// ================== 选择单词本 ==================
+function selectBook(bk,name){
+  currentBook = bk;
+  document.querySelectorAll(".book-btn").forEach(b=>b.classList.remove("active"));
+  event.target.classList.add("active");
+  document.getElementById("btnNew").disabled = false;
+  document.getElementById("btnReview").disabled = false;
+  toast("已选择 " + name);
+}
+
+// ================== 开始学习/复习 ==================
+function startStudy(mode){
+  if(!currentBook){toast("请先选择单词本");return;}
+  const list = WORD_BANK[currentBook];
+  if(!list || list.length===0){toast("词库为空");return;}
+
+  if(mode==="new"){
+    batch = list.filter(w => !data.learned[w.word]).slice(0,BATCH_SIZE);
+  }else{
+    const now = Date.now();
+    batch = list.filter(w => {
+      if(!data.learned[w.word]) return false;
+      const last = data.reviewDates?.[w.word]||0;
+      return now - last > 86400000; // 超过1天复习
+    }).slice(0,BATCH_SIZE);
+  }
+
+  if(batch.length===0){toast(mode==="new"?"没有新单词了":"没有需要复习的单词");return;}
+
+  idx=0;
+  renderWord();
+  page("studyPage");
+}
+
+// ================== 渲染单词 ==================
+function renderWord(){
+  const item = batch[idx];
+  document.getElementById("word").textContent = item.word;
+  document.getElementById("read").textContent = item.reading;
+  document.getElementById("mean").textContent = item.meaning;
+  document.getElementById("pair").textContent = data.collocations?.[item.word]||"点击编辑搭配";
+  document.getElementById("progress").style.width = (idx/BATCH_SIZE*100)+"%";
+}
+
+// ================== 标记熟/生 ==================
+function mark(known){
+  const w = batch[idx].word;
+  data.learned[w] = known?1:0;
+  const today = new Date().toISOString().split('T')[0];
+  data.daily[today] = (data.daily[today]||0)+1;
+  data.total = (data.total||0)+1;
+  if(!data.reviewDates) data.reviewDates={};
+  data.reviewDates[w] = Date.now();
+  save();
+  toast(known?"✅ 已掌握":"❌ 需复习");
+
+  idx++;
+  if(idx>=BATCH_SIZE){page("finishPage");}else{renderWord();}
 }
 
 // ================== 搭配编辑 ==================
-function editCollocation(){
-  document.getElementById("editInput").value = userData.collocations[currentBatch[currentIndex].word] || "";
-  switchPage("editPage");
+function editPair(){
+  document.getElementById("pairInput").value = data.collocations?.[batch[idx].word]||"";
+  page("editPage");
 }
-function saveCollocation(){
-  const val = document.getElementById("editInput").value.trim();
-  userData.collocations[currentBatch[currentIndex].word] = val;
-  saveData();
-  document.getElementById("collocation").textContent = val || "点击编辑搭配";
-  switchPage("studyPage");
+function savePair(){
+  const val = document.getElementById("pairInput").value.trim();
+  const w = batch[idx].word;
+  if(val) data.collocations[w]=val; else delete data.collocations[w];
+  save();
+  document.getElementById("pair").textContent = val||"点击编辑搭配";
+  page("studyPage");
 }
+function backToStudy(){page("studyPage");}
 
-// ================== 拼写测试（10个一组）==================
-function startSpell(){
-  spellQueue = [...currentBatch];
-  spellAttempts = {};
-  runSpell();
-}
+// ================== 拼写检查 ==================
+function startSpell(){spellQ=[...batch];attempts={};runSpell();}
 function runSpell(){
-  if(spellQueue.length===0){ showToast("🎉 拼写全部通关！"); switchPage("homePage"); return; }
-  const item = spellQueue[0];
-  document.getElementById("spellWord").textContent = item.word + " (" + item.meaning + ")";
-  document.getElementById("spellInput").value = "";
-  switchPage("spellPage");
+  if(spellQ.length===0){toast("🎉 拼写全部通过！");page("homePage");return;}
+  const item=spellQ[0];
+  document.getElementById("spellWord").textContent=item.word+" ("+item.meaning+")";
+  document.getElementById("spellInput").value="";
+  page("spellPage");
 }
 function checkSpell(){
-  const input = document.getElementById("spellInput").value.trim();
-  const item = spellQueue[0];
+  const input=document.getElementById("spellInput").value.trim();
+  const item=spellQ[0];
   const correct = input===item.word || input===item.reading || input.includes(item.reading);
-
-  spellAttempts[item.word] = (spellAttempts[item.word]||0) + (correct?1:0);
-  if(correct && spellAttempts[item.word]>=2){
-    spellQueue.shift();
-    showToast("✅ 通过");
-  }else if(correct){
-    showToast("第一次正确，再确认一次");
-  }else{
-    showToast("❌ 错误");
-  }
+  attempts[item.word]=(attempts[item.word]||0)+(correct?1:0);
+  if(correct&&attempts[item.word]>=2){spellQ.shift();toast("✅ 通过");}
+  else if(correct){toast("第一次正确，再确认一次");}
+  else{toast("❌ 错误");}
   runSpell();
 }
 
-// ================== 统计 & 日历（收益严格10个=1元）==================
-function showStatsPage(){
-  renderStats();
-  switchPage("statsPage");
+function showSummary(){
+  let msg="本组小结：\n";
+  batch.forEach(item=>msg+=item.word+" → "+(data.learned[item.word]?"掌握":"未掌握")+"\n");
+  alert(msg);
+  page("homePage");
 }
-function renderStats(){
-  const today = new Date().toISOString().split('T')[0];
-  const todayCount = userData.daily[today]||0;
-  const totalCount = userData.total||0;
 
-  document.getElementById("todayWords").textContent = todayCount;
-  document.getElementById("totalWords").textContent = totalCount;
-  document.getElementById("todayEarn").textContent = "¥" + Math.floor(todayCount/10);
-  document.getElementById("totalEarn").textContent = "¥" + Math.floor(totalCount/10);
+// ================== 攒钱进度 ==================
+function showStats(){
+  const today=new Date().toISOString().split('T')[0];
+  const todayC=data.daily[today]||0;
+  const totalC=data.total||0;
+  document.getElementById("todayWords").textContent=todayC;
+  document.getElementById("totalWords").textContent=totalC;
+  document.getElementById("todayMoney").textContent="¥"+Math.floor(todayC/10);
+  document.getElementById("totalMoney").textContent="¥"+Math.floor(totalC/10);
 
-  // 日历
-  const grid = document.getElementById("calendarGrid");
-  grid.innerHTML = "";
-  const now = new Date(), y=now.getFullYear(), m=now.getMonth();
-  const first = new Date(y,m,1).getDay()||7;
-  const days = new Date(y,m+1,0).getDate();
-
-  for(let i=1;i<first;i++) grid.innerHTML += '<div class="cal-empty"></div>';
+  const grid=document.getElementById("calGrid");
+  grid.innerHTML="";
+  const n=new Date(),y=n.getFullYear(),m=n.getMonth();
+  const fd=new Date(y,m,1).getDay()||7;
+  const days=new Date(y,m+1,0).getDate();
+  for(let i=1;i<fd;i++)grid.innerHTML+='<div class="cal-empty"></div>';
   for(let d=1;d<=days;d++){
-    const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const cnt = userData.daily[key]||0;
-    let cls = "cal-day";
-    if(cnt>=30) cls+=" cal-dark";
-    else if(cnt>10) cls+=" cal-mid";
-    else if(cnt>=10) cls+=" cal-light";
-    if(d===now.getDate()) cls+=" cal-today";
-    grid.innerHTML += `<div class="${cls}">${d}</div>`;
+    const k=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const c=data.daily[k]||0;
+    let cls="cal-day";
+    if(c>=30)cls+=" cal-dark";
+    else if(c>10)cls+=" cal-mid";
+    else if(c>=10)cls+=" cal-light";
+    if(d===n.getDate())cls+=" cal-today";
+    grid.innerHTML+=`<div class="${cls}">${d}</div>`;
   }
+  page("statsPage");
 }
 
-// ================== 工具 ==================
-function switchPage(id){ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active")); document.getElementById(id).classList.add("active"); }
-function showToast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1800); }
-function resetData(){ if(confirm("重置全部数据？")){ localStorage.clear(); location.reload(); } }
+function backHome(){page("homePage");}
 
-showToast("页面已就绪");
+// ================== 初始化 ==================
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadAllJson();
+  page("homePage");
+});
 </script>
 </body>
 </html>
