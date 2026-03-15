@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 🔥 修复3：锁定H5页面，禁止缩放误触 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
     <title>阿文的日语小站</title>
     <style>
         :root {
@@ -52,7 +53,7 @@
         h1, h2 { color: var(--primary); text-align: center; margin-top: 0; }
         .slogan { font-size: 14px; color: #666; text-align: center; margin-bottom: 30px; }
 
-        /* 🔥 首页按钮优化：统一缩短宽度，居中更清爽 */
+        /* 首页按钮统一宽度 */
         button {
             background: var(--secondary);
             color: white;
@@ -74,7 +75,7 @@
         button:disabled { background: #ccc; cursor: not-allowed; }
         .voice-btn { background: #599d6a; margin-top: 8px; font-size: 14px; padding: 10px; }
 
-        /* 🔥 学习界面UI优化：单词字号/图标统一 */
+        /* 学习界面UI优化 */
         .word-display {
             font-size: 28px; font-weight: bold; color: var(--primary);
             text-align: center; margin: 18px 0;
@@ -83,7 +84,7 @@
         .info-item { margin-bottom: 8px; }
         .label { font-weight: bold; color: var(--primary); margin-right: 5px; }
 
-        /* 单词笔记样式 */
+        /* 单词笔记 */
         .note-area {
             width: 100%;
             min-height: 80px;
@@ -120,7 +121,7 @@
         .stat-val { font-size: 20px; font-weight: bold; color: var(--primary); }
         .stat-lbl { font-size: 12px; color: #888; }
 
-        /* 学习日历优化 + 点击效果 */
+        /* 学习日历（标准周日起始） */
         .calendar-header {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -146,15 +147,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
             transition: 0.2s;
         }
-        .cal-day:hover { opacity: 0.8; }
         .cal-active-1 { background: #c8e6c9; }
         .cal-active-2 { background: #81c784; }
         .cal-active-3 { background: #4caf50; color: white; }
         .cal-today { border: 2px solid var(--primary); }
-        .cal-empty { background: transparent; cursor: default; }
+        .cal-empty { background: transparent; }
 
         .loading, .error { text-align: center; padding: 20px; font-size: 16px; }
         .error { color: var(--danger); }
@@ -204,7 +203,7 @@
             border: 2px solid var(--danger);
         }
 
-        /* 全局提示框 */
+        /* 提示框 */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -221,24 +220,6 @@
         }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-        /* 日历详情弹窗 */
-        .modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.3);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 9999; opacity: 0; pointer-events: none;
-            transition: 0.3s;
-        }
-        .modal.show { opacity: 1; pointer-events: all; }
-        .modal-content {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            width: 80%; max-width: 300px;
-            text-align: center;
-        }
-
         .book-selector { margin: 20px 0; }
         .book-title { text-align: center; font-size: 16px; color: var(--primary); margin-bottom: 10px; }
         .book-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
@@ -246,20 +227,29 @@
         .book-btn.active { background: var(--secondary); color: white; border-color: var(--secondary); }
         .current-book { text-align: center; font-size: 14px; color: #666; margin: 10px 0; }
 
+        /* 🔥 修复1：学习页顶部统一字号 + 左右对齐 */
         .study-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            width: 100%;
         }
         .back-btn {
             background: transparent;
             color: var(--primary);
             border: none;
-            font-size: 16px;
-            padding: 8px;
+            font-size: 16px !important;
+            padding: 0;
             width: auto;
             max-width: none;
+            margin: 0;
+            font-weight: bold;
+        }
+        .study-header h2 {
+            font-size: 16px !important;
+            margin: 0;
+            font-weight: bold;
         }
         
         .summary-item {
@@ -271,24 +261,22 @@
         .summary-meaning { color: #555; margin-left: 8px; }
         .summary-list { max-height: 60vh; overflow-y: auto; margin-bottom: 20px; }
 
-        /* 三按钮精简UI */
+        /* 三按钮精简样式 */
         .mini-btn {
             padding: 10px !important;
             font-size: 14px !important;
             margin-bottom: 8px !important;
         }
+        /* 🔥 修复2：底部按钮增加间距 + 横向并排 */
+        .bottom-btn-group {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
     </style>
 </head>
 <body>
-
-<!-- 日历详情弹窗 -->
-<div class="modal" id="dateModal">
-    <div class="modal-content">
-        <h3 id="modalDate">日期</h3>
-        <p id="modalDesc" style="font-size:16px; margin:10px 0;">学习：0 词</p>
-        <button onclick="closeModal()">确定</button>
-    </div>
-</div>
 
 <div class="container">
     <!-- 1. 加载页 -->
@@ -296,7 +284,7 @@
         <div class="loading">正在加载词库...</div>
     </div>
 
-    <!-- 2. 首页 🔥 文案修改：阿文的日语小站 + 小金库 -->
+    <!-- 2. 首页 -->
     <div id="homePage" class="page">
         <div class="card">
             <h1>阿文的日语小站</h1>
@@ -321,10 +309,12 @@
     <!-- 3. 学习页 -->
     <div id="studyPage" class="page">
         <div class="card">
+            <!-- 顶部统一排版 -->
             <div class="study-header">
                 <button class="back-btn" onclick="switchPage('homePage')">← 返回</button>
                 <h2 id="studyTitle">学习中</h2>
             </div>
+            
             <div class="progress-bar"><div class="progress-fill" id="studyProgress"></div></div>
             <div class="word-display" id="showWord" onclick="speakWord()"></div>
             <button class="voice-btn" onclick="speakWord()">🔊 播放发音</button>
@@ -337,14 +327,18 @@
             <textarea class="note-area" id="wordNote" placeholder="记录搭配、例句、笔记..."></textarea>
             <button class="note-save-btn" onclick="saveNoteManual()">💾 保存笔记</button>
 
+            <!-- 三按钮：上一词/熟/生 -->
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
                 <button class="outline mini-btn" onclick="prevWord()">上一词</button>
                 <button class="mini-btn" onclick="markKnown()">熟</button>
                 <button class="danger mini-btn" onclick="markUnknown()">生</button>
             </div>
 
-            <button onclick="nextWord(true)">记住了 ➜</button>
-            <button class="outline" onclick="nextWord(false)">记错了 🔄</button>
+            <!-- 🔥 修复2：底部按钮并排+间距 -->
+            <div class="bottom-btn-group">
+                <button onclick="nextWord(true)">记住了 ➜</button>
+                <button class="outline" onclick="nextWord(false)">记错了 🔄</button>
+            </div>
         </div>
     </div>
 
@@ -401,15 +395,16 @@
                 <div class="stat-box"><div class="stat-val" id="streak">0</div><div class="stat-lbl">连续天数</div></div>
             </div>
 
-            <h3 style="font-size:16px;">📅 学习日历（点击查看详情）</h3>
+            <!-- 🔥 修复5：删除点击详情 + 周日起始日历 -->
+            <h3 style="font-size:16px;">📅 学习日历</h3>
             <div class="calendar-header">
+                <div class="weekday">日</div>
                 <div class="weekday">一</div>
                 <div class="weekday">二</div>
                 <div class="weekday">三</div>
                 <div class="weekday">四</div>
                 <div class="weekday">五</div>
                 <div class="weekday">六</div>
-                <div class="weekday">日</div>
             </div>
             <div class="calendar" id="studyCalendar"></div>
 
@@ -438,7 +433,7 @@ let G = {
   studyBatch: [], currentIndex: 0
 };
 
-// 随机标语
+// 激励语
 const SLOGANS = [
   "背一个单词，存一笔财富 🤑",
   "每日记一词，财富积少成多 ✨",
@@ -452,7 +447,6 @@ const SLOGANS = [
   "日积月累，日语与财富皆可期 🌱"
 ];
 
-// 🔥 学习激励语（50/100词各10条）
 const MOTIVATION_50 = [
   "🎉 太棒了！今日突破50词，日语力暴涨！",
   "✨ 50词达成！你的坚持超耀眼！",
@@ -483,7 +477,6 @@ let USER = JSON.parse(localStorage.getItem("jpStudy") || `{
   "learned":{}, "total":0, "today":0, "streak":0, "last":"", "cal":{}
 }`);
 
-// 激励标记：防止重复弹窗
 let hasMotivation50 = false;
 let hasMotivation100 = false;
 
@@ -513,18 +506,14 @@ function updateStudyTitle() {
   document.getElementById("studyTitle").textContent = `学习中 ${learned}/${total}`;
 }
 
-// ==========================
-// 🔥 学习激励弹窗
-// ==========================
+// 学习激励
 function checkMotivation() {
   const todayCount = USER.today;
-  // 50词激励
   if(todayCount >=50 && !hasMotivation50) {
     hasMotivation50 = true;
     const msg = MOTIVATION_50[Math.floor(Math.random()*MOTIVATION_50.length)];
     showToast(msg);
   }
-  // 100词激励 + 休息提示
   if(todayCount >=100 && !hasMotivation100) {
     hasMotivation100 = true;
     const msg = MOTIVATION_100[Math.floor(Math.random()*MOTIVATION_100.length)];
@@ -532,9 +521,7 @@ function checkMotivation() {
   }
 }
 
-// ==========================
-// 🔥 手动保存笔记
-// ==========================
+// 手动保存笔记
 function saveNoteManual() {
   if(!currentItem) return;
   const w = currentItem.word;
@@ -553,22 +540,7 @@ function saveNoteManual() {
   renderWord();
 }
 
-// ==========================
-// 🔥 日历弹窗功能
-// ==========================
-function openModal(dateStr) {
-  const count = USER.cal[dateStr] || 0;
-  document.getElementById("modalDate").textContent = dateStr;
-  document.getElementById("modalDesc").textContent = `学习：${count} 词`;
-  document.getElementById("dateModal").classList.add("show");
-}
-function closeModal() {
-  document.getElementById("dateModal").classList.remove("show");
-}
-
-// ==========================
 // 加载词库
-// ==========================
 async function loadAllJson() {
   for (let i = 1; i <= 5; i++) {
     const level = `n${i}`;
@@ -581,9 +553,7 @@ async function loadAllJson() {
   }
 }
 
-// ==========================
 // 初始化
-// ==========================
 document.addEventListener("DOMContentLoaded", async () => {
   await loadAllJson();
   randomSlogan();
@@ -591,7 +561,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   updateUI();
   switchPage("homePage");
   
-  // 重置每日激励标记
   const lastDate = USER.last || "";
   if(lastDate !== getToday()) {
     hasMotivation50 = false;
@@ -601,9 +570,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// ==========================
 // 选择单词本
-// ==========================
 function selectBook(bk, name) {
   G.currentBook = bk;
   G.currentBookName = name;
@@ -615,9 +582,7 @@ function selectBook(bk, name) {
   showToast("✅ 已选择：" + name);
 }
 
-// ==========================
-// 学习/复习逻辑
-// ==========================
+// 学习/复习
 function startStudy(mode) {
   const fullList = WORD_BANK[G.currentBook];
   if (!fullList || fullList.length < 1) {
@@ -654,7 +619,7 @@ function startStudy(mode) {
   switchPage("studyPage");
 }
 
-// 返回上一词
+// 上一词
 function prevWord() {
   if(G.currentIndex <= 0) {
     showToast("🔔 已经是第一个单词啦");
@@ -679,8 +644,31 @@ function renderWord() {
 }
 
 // ==========================
-// 艾宾浩斯核心逻辑
+// 🔥 修复4：生词标记逻辑（自动进入复习库）
 // ==========================
+function markKnown() {
+  if(!currentItem) return;
+  const w = currentItem.word;
+  if(USER.learned[w]) {
+    USER.learned[w].status = 1;
+    save();
+    showToast("✅ 已掌握");
+  }
+}
+function markUnknown() {
+  if(!currentItem) return;
+  const w = currentItem.word;
+  if(USER.learned[w]) {
+    // 标记生：重置复习状态，次日重新复习
+    USER.learned[w].status = 0;
+    USER.learned[w].reviewCount = 0;
+    USER.learned[w].nextReview = getToday(); // 立即进入待复习
+    save();
+    showToast("🔄 已标记为生词，将重新复习");
+  }
+}
+
+// 艾宾浩斯核心
 function nextWord(ok) {
   const w = G.studyBatch[G.currentIndex].word;
   const today = getToday();
@@ -706,12 +694,11 @@ function nextWord(ok) {
       else if (word.reviewCount >= 2) word.nextReview = getFutureDate(7);
     } else {
       word.reviewCount = 0;
-      word.nextReview = getFutureDate(1);
+      word.nextReview = getToday();
     }
   }
 
   save();
-  // 触发激励判断
   checkMotivation();
   
   G.currentIndex++;
@@ -723,25 +710,7 @@ function nextWord(ok) {
   renderWord();
 }
 
-// 标记熟/生
-function markKnown() {
-  if(!currentItem) return;
-  const w = currentItem.word;
-  if(USER.learned[w]) USER.learned[w].status = 1;
-  save();
-  showToast("✅ 已掌握");
-}
-function markUnknown() {
-  if(!currentItem) return;
-  const w = currentItem.word;
-  if(USER.learned[w]) USER.learned[w].status = 0;
-  save();
-  showToast("🔄 需复习");
-}
-
-// ==========================
-// 学习小结/拼写复习
-// ==========================
+// 学习小结/拼写
 function goToSummary() {
   const list = document.getElementById("summaryList");
   list.innerHTML = "";
@@ -800,7 +769,7 @@ function checkSpell() {
 }
 
 // ==========================
-// 🔥 学习日历（支持点击）
+// 🔥 修复5：日历周日起始
 // ==========================
 function initStudyCalendar() {
   const cal = document.getElementById("studyCalendar");
@@ -808,10 +777,11 @@ function initStudyCalendar() {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
-  const firstDay = new Date(year, month, 1).getDay() || 7;
+  // 周日为第一列
+  const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  for (let i = 1; i < firstDay; i++) {
+  for (let i = 0; i < firstDay; i++) {
     const el = document.createElement("div");
     el.className = "cal-empty";
     cal.appendChild(el);
@@ -829,15 +799,11 @@ function initStudyCalendar() {
     else if (cnt >= 5) el.classList.add("cal-active-2");
     else if (cnt >= 1) el.classList.add("cal-active-1");
 
-    // 点击查看详情
-    el.onclick = () => openModal(dateStr);
     cal.appendChild(el);
   }
 }
 
-// ==========================
-// 数据存储/更新
-// ==========================
+// 数据存储
 function save() {
   localStorage.setItem("jpStudy", JSON.stringify(USER));
   updateUI();
@@ -870,9 +836,7 @@ function showToast(m) {
   setTimeout(() => t.classList.remove("show"), 2200);
 }
 
-// ==========================
 // 日语发音
-// ==========================
 function loadVoices() {
   const voices = speechSynthesis.getVoices();
   japaneseVoice = voices.find(v => v.lang === 'ja-JP') || voices[0];
